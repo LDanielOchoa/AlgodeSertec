@@ -1,6 +1,5 @@
 import React from 'react';
 import type { RanuraColor } from '../modelos/DefinicionColor';
-import { Button, Slider, Chip, Tooltip } from '@heroui/react';
 import { Lock, Unlock, ChevronDown } from 'lucide-react';
 
 interface FilaColorStudioProps {
@@ -13,8 +12,7 @@ interface FilaColorStudioProps {
 }
 
 /**
- * Fila de control de color utilizando componentes oficiales de HeroUI (Button, Slider, Chip, Tooltip).
- * Cumple con SRP.
+ * Fila de control de color limpia y sin bordes.
  */
 export const FilaColorStudio: React.FC<FilaColorStudioProps> = ({
   ranura,
@@ -24,20 +22,24 @@ export const FilaColorStudio: React.FC<FilaColorStudioProps> = ({
   onModificarPorcentaje,
   deshabilitadoBloqueo
 }) => {
+  const tooltipTexto = deshabilitadoBloqueo
+    ? 'Bloqueo no disponible en modo 1 color'
+    : ranura.bloqueado
+    ? 'Desbloquear proporción'
+    : 'Bloquear proporción';
+
   return (
-    <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-zinc-200 hover:border-zinc-300 transition-colors duration-200 space-y-3">
+    <div className="bg-zinc-100/70 hover:bg-zinc-100/90 p-3.5 sm:p-4 rounded-2xl transition-colors duration-200 space-y-3">
       {/* Selector de color y candado */}
       <div className="flex items-center gap-2">
-        <Button
-          variant="flat"
-          size="md"
-          radius="lg"
-          className="flex-1 justify-between bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 px-3 h-11"
-          onPress={() => onAbrirModal(indice)}
+        <button
+          type="button"
+          onClick={() => onAbrirModal(indice)}
+          className="flex-1 flex items-center justify-between bg-white hover:bg-white/90 rounded-xl px-3.5 h-11 transition-all cursor-pointer text-left shadow-xs"
         >
-          <div className="flex items-center gap-2.5 truncate">
+          <div className="flex items-center gap-3 truncate">
             <span
-              className="w-4 h-4 rounded-full border border-black/10 flex-shrink-0"
+              className="w-4 h-4 rounded-full flex-shrink-0 ring-2 ring-black/5"
               style={{ backgroundColor: ranura.color ? ranura.color.hex : '#006FEE' }}
             />
             <span className="text-xs font-semibold text-zinc-900 truncate">
@@ -45,67 +47,49 @@ export const FilaColorStudio: React.FC<FilaColorStudioProps> = ({
             </span>
           </div>
           <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
-        </Button>
+        </button>
 
-        {/* Botón de bloqueo con Tooltip de HeroUI */}
-        <Tooltip
-          content={
+        {/* Botón de bloqueo */}
+        <button
+          type="button"
+          disabled={deshabilitadoBloqueo}
+          onClick={() => onAlternarBloqueo(indice)}
+          title={tooltipTexto}
+          className={`flex items-center justify-center rounded-xl h-11 w-11 transition-all ${
             deshabilitadoBloqueo
-              ? 'Bloqueo no disponible en modo 1 color'
+              ? 'opacity-40 bg-zinc-200/60 text-zinc-400 cursor-not-allowed'
               : ranura.bloqueado
-              ? 'Desbloquear proporción'
-              : 'Bloquear proporción'
-          }
-          color={ranura.bloqueado ? 'primary' : 'default'}
-          size="sm"
-          radius="md"
+              ? 'bg-[#006FEE] text-white shadow-xs cursor-pointer'
+              : 'bg-white hover:bg-white/90 text-zinc-600 shadow-xs cursor-pointer'
+          }`}
+          aria-label={tooltipTexto}
         >
-          <Button
-            isIconOnly
-            size="md"
-            radius="lg"
-            variant={ranura.bloqueado ? 'solid' : 'flat'}
-            color={ranura.bloqueado ? 'primary' : 'default'}
-            isDisabled={deshabilitadoBloqueo}
-            className={`border border-zinc-200 h-11 w-11 ${
-              ranura.bloqueado ? 'bg-[#006FEE] text-white border-transparent' : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-600'
-            }`}
-            onPress={() => onAlternarBloqueo(indice)}
-          >
-            {ranura.bloqueado ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
-          </Button>
-        </Tooltip>
+          {ranura.bloqueado ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+        </button>
       </div>
 
-      {/* Control deslizante Slider de HeroUI */}
+      {/* Control deslizante Slider */}
       <div className="flex items-center gap-3 pt-0.5">
-        <Slider
-          size="sm"
-          color="primary"
+        <input
+          type="range"
+          min={0}
+          max={100}
           step={1}
-          minValue={0}
-          maxValue={100}
           value={ranura.porcentaje}
-          isDisabled={ranura.bloqueado || deshabilitadoBloqueo}
-          onChange={val => onModificarPorcentaje(indice, Array.isArray(val) ? val[0] : val)}
+          disabled={ranura.bloqueado || deshabilitadoBloqueo}
+          onChange={e => onModificarPorcentaje(indice, Number(e.target.value))}
           aria-label={`Porcentaje Color ${indice + 1}`}
-          classNames={{
-            base: 'flex-1',
-            track: 'bg-zinc-200 border-none h-1.5',
-            filler: 'bg-[#006FEE]',
-            thumb: 'bg-[#006FEE] border-2 border-white w-4 h-4 shadow-none'
-          }}
+          className={`flex-1 ${
+            ranura.bloqueado || deshabilitadoBloqueo ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
+          }`}
         />
 
-        <Chip
-          size="sm"
-          variant="flat"
-          radius="md"
-          className="bg-zinc-100 border border-zinc-200 text-zinc-900 font-bold font-mono min-w-[50px] justify-center"
-        >
+        <span className="inline-flex items-center justify-center bg-white text-zinc-900 font-bold font-mono text-xs px-2.5 py-1 rounded-xl min-w-[52px] shadow-xs">
           {ranura.porcentaje}%
-        </Chip>
+        </span>
       </div>
     </div>
   );
 };
+
+

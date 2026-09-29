@@ -1,6 +1,6 @@
 import React from 'react';
 import type { ModoVisualizador } from '../modelos/DefinicionColor';
-import { Tabs, Tab } from '@heroui/react';
+import { motion } from 'framer-motion';
 
 interface PestanasModoProps {
   modos: ModoVisualizador[];
@@ -9,7 +9,7 @@ interface PestanasModoProps {
 }
 
 /**
- * Selector de modo utilizando el componente oficial Tabs de HeroUI.
+ * Selector de modo con indicador animado suave (spring layout animation).
  * Cumple con SRP.
  */
 export const PestanasModo: React.FC<PestanasModoProps> = ({
@@ -22,34 +22,48 @@ export const PestanasModo: React.FC<PestanasModoProps> = ({
       <label className="block text-xs font-semibold text-zinc-600">
         Modo de Mezcla
       </label>
-      <Tabs
-        fullWidth
-        size="md"
-        radius="lg"
-        color="primary"
-        variant="bordered"
-        selectedKey={String(modoSeleccionado)}
-        onSelectionChange={key => onSeleccionarModo(Number(key))}
-        classNames={{
-          tabList: 'bg-zinc-100/90 border border-zinc-200 p-1',
-          cursor: 'bg-white shadow-none border border-zinc-200/80',
-          tab: 'h-10 text-zinc-600 font-semibold data-[selected=true]:text-[#006FEE]'
-        }}
-      >
-        {modos.map(m => (
-          <Tab
-            key={String(m.id)}
-            title={
-              <div className="flex flex-col items-center leading-none gap-0.5">
-                <span className="text-xs font-bold">{m.subtitulo}</span>
-                <span className="text-[10px] text-zinc-400 font-normal">
-                  {m.id === 1 ? 'Sólido' : `${m.id} Colores`}
-                </span>
-              </div>
-            }
-          />
-        ))}
-      </Tabs>
+      <div className="grid grid-cols-3 gap-1 bg-zinc-100/80 p-1 rounded-2xl relative">
+        {modos.map(m => {
+          const esActivo = modoSeleccionado === m.id;
+          return (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => onSeleccionarModo(m.id)}
+              className="relative flex flex-col items-center justify-center py-2 px-1 rounded-xl cursor-pointer select-none transition-colors"
+            >
+              {esActivo && (
+                <motion.div
+                  layoutId="indicador-modo-activo"
+                  className="absolute inset-0 bg-white rounded-xl shadow-xs"
+                  transition={{
+                    type: 'spring',
+                    stiffness: 450,
+                    damping: 35
+                  }}
+                />
+              )}
+              <span
+                className={`relative z-10 text-xs leading-tight transition-colors duration-150 ${
+                  esActivo ? 'font-bold text-[#006FEE]' : 'font-medium text-zinc-600 hover:text-zinc-900'
+                }`}
+              >
+                {m.subtitulo}
+              </span>
+              <span
+                className={`relative z-10 text-[10px] leading-tight transition-colors duration-150 ${
+                  esActivo ? 'text-[#006FEE]/75 font-medium' : 'text-zinc-400'
+                }`}
+              >
+                {m.id === 1 ? 'Sólido' : `${m.id} Colores`}
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 };
+
+
+

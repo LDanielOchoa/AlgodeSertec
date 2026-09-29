@@ -69,12 +69,12 @@ export class GeneradorGranulosProcedurales implements IServicioGranulosProcedura
       });
     }
 
-    // 1. Sombra de contacto oclusión ambiental inferior
+    // 1. Sombra de contacto oclusión ambiental inferior suave
     ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-    ctx.shadowBlur = 3;
-    ctx.shadowOffsetX = 1;
-    ctx.shadowOffsetY = 2;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+    ctx.shadowBlur = 2;
+    ctx.shadowOffsetX = 0.5;
+    ctx.shadowOffsetY = 1.2;
 
     ctx.beginPath();
     ctx.moveTo(vertices[0].x, vertices[0].y);
@@ -82,11 +82,11 @@ export class GeneradorGranulosProcedurales implements IServicioGranulosProcedura
       ctx.lineTo(vertices[i].x, vertices[i].y);
     }
     ctx.closePath();
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
     ctx.fill();
     ctx.restore();
 
-    // 2. Base con iluminación direccional (luz superior izquierda)
+    // 2. Base difusa mate de caucho EPDM
     ctx.save();
     ctx.beginPath();
     ctx.moveTo(vertices[0].x, vertices[0].y);
@@ -100,9 +100,10 @@ export class GeneradorGranulosProcedurales implements IServicioGranulosProcedura
       centroX - radioBase, centroY - radioBase,
       centroX + radioBase, centroY + radioBase
     );
-    const colorLuz = `rgb(${Math.min(255, rBase + 45)}, ${Math.min(255, gBase + 45)}, ${Math.min(255, bBase + 45)})`;
+    // Gradiente difuso suave sin brillos plásticos
+    const colorLuz = `rgb(${Math.min(255, rBase + 3)}, ${Math.min(255, gBase + 3)}, ${Math.min(255, bBase + 3)})`;
     const colorMedio = `rgb(${rBase}, ${gBase}, ${bBase})`;
-    const colorSombra = `rgb(${Math.max(0, rBase - 45)}, ${Math.max(0, gBase - 45)}, ${Math.max(0, bBase - 45)})`;
+    const colorSombra = `rgb(${Math.max(0, rBase - 8)}, ${Math.max(0, gBase - 8)}, ${Math.max(0, bBase - 8)})`;
 
     degradadoLuz.addColorStop(0, colorLuz);
     degradadoLuz.addColorStop(0.5, colorMedio);
@@ -110,10 +111,10 @@ export class GeneradorGranulosProcedurales implements IServicioGranulosProcedura
     ctx.fillStyle = degradadoLuz;
     ctx.fill();
 
-    // 3. Facetas angulares y biseles 3D
+    // 3. Facetas angulares con sombreado difuso mate (sin reflejo especular blanco)
     const puntoCima = {
-      x: centroX + (siguienteRnd() - 0.5) * 3,
-      y: centroY + (siguienteRnd() - 0.5) * 3
+      x: centroX + (siguienteRnd() - 0.5) * 2.5,
+      y: centroY + (siguienteRnd() - 0.5) * 2.5
     };
 
     for (let i = 0; i < vertices.length; i++) {
@@ -128,28 +129,28 @@ export class GeneradorGranulosProcedurales implements IServicioGranulosProcedura
 
       const dx = v2.x - v1.x;
       const dy = v2.y - v1.y;
-      // Normal simulada con dirección de luz (-0.6, -0.8)
+      // Normal simulada con dirección de luz suave
       const iluminacionFaceta = (dx * -0.6 + dy * -0.8) / (Math.hypot(dx, dy) || 1);
 
       if (iluminacionFaceta > 0) {
-        ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(0.3, iluminacionFaceta * 0.28)})`;
+        ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(0.02, iluminacionFaceta * 0.02)})`;
       } else {
-        ctx.fillStyle = `rgba(0, 0, 0, ${Math.min(0.4, Math.abs(iluminacionFaceta) * 0.38)})`;
+        ctx.fillStyle = `rgba(0, 0, 0, ${Math.min(0.10, Math.abs(iluminacionFaceta) * 0.10)})`;
       }
       ctx.fill();
     }
 
-    // 4. Micro-textura porosa de caucho
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-    for (let k = 0; k < 4; k++) {
+    // 4. Micro-textura porosa que absorbe la luz (efecto mate amortiguante)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
+    for (let k = 0; k < 5; k++) {
       const px = centroX + (siguienteRnd() - 0.5) * radioBase * 1.2;
       const py = centroY + (siguienteRnd() - 0.5) * radioBase * 1.2;
       ctx.fillRect(px, py, 1.2, 1.2);
     }
 
-    // 5. Contorno de definición sutil
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.28)';
-    ctx.lineWidth = 0.75;
+    // 5. Contorno de definición suave
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.14)';
+    ctx.lineWidth = 0.5;
     ctx.beginPath();
     ctx.moveTo(vertices[0].x, vertices[0].y);
     for (let i = 1; i < vertices.length; i++) {

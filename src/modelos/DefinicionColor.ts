@@ -29,22 +29,37 @@ export interface PatronDiseno3D {
 }
 
 export const CATALOGO_COLORES: DefinicionColor[] = [
-  { id: 'dark-blue', nombre: 'Dark Blue - 247', hex: '#0E518D', r: 14, g: 81, b: 141, categoria: 'Azules' },
-  { id: 'light-gray', nombre: 'Light Gray - 236', hex: '#CBD0CC', r: 203, g: 208, b: 204, categoria: 'Neutrales' },
-  { id: 'medium-grey', nombre: 'Medium Grey - 207', hex: '#9EA0A1', r: 158, g: 160, b: 161, categoria: 'Neutrales' },
-  { id: 'black', nombre: 'Black - 200', hex: '#282828', r: 40, g: 40, b: 40, categoria: 'Neutrales' },
-  { id: 'pearl', nombre: 'White / Pearl - 211', hex: '#E2DFD2', r: 226, g: 223, b: 210, categoria: 'Neutrales' },
-  { id: 'beige', nombre: 'Beige - 204', hex: '#D5C298', r: 213, g: 194, b: 152, categoria: 'Tierra' },
-  { id: 'eggshell', nombre: 'Eggshell - 262', hex: '#E5E3CE', r: 229, g: 227, b: 206, categoria: 'Tierra' },
-  { id: 'brown', nombre: 'Brown - 206', hex: '#A27436', r: 162, g: 116, b: 54, categoria: 'Tierra' },
-  { id: 'red', nombre: 'Red - 202', hex: '#842B27', r: 132, g: 43, b: 39, categoria: 'Cálidos' },
-  { id: 'light-green', nombre: 'Light Green - 231', hex: '#8EB280', r: 142, g: 178, b: 128, categoria: 'Verdes' },
-  { id: 'dark-green', nombre: 'Dark Green - 205', hex: '#2D5324', r: 45, g: 83, b: 36, categoria: 'Verdes' },
-  { id: 'light-blue', nombre: 'Light Blue - 203', hex: '#6A93B0', r: 106, g: 147, b: 176, categoria: 'Azules' },
-  { id: 'medium-blue', nombre: 'Medium Blue - 238', hex: '#078CEB', r: 7, g: 140, b: 235, categoria: 'Azules' },
-  { id: 'teal', nombre: 'Teal', hex: '#7EB1B2', r: 126, g: 177, b: 178, categoria: 'Azules' },
-  { id: 'yellow', nombre: 'Mustard Yellow - 208', hex: '#D6A128', r: 214, g: 161, b: 40, categoria: 'Cálidos' }
+  // Fila 1
+  { id: 'inferno-red', nombre: 'Inferno Red', hex: '#9E3C32', r: 158, g: 60, b: 50, categoria: 'Cálidos' },
+  { id: 'cobalt-blue', nombre: 'Cobalt Blue', hex: '#2962B8', r: 41, g: 98, b: 184, categoria: 'Azules' },
+  { id: 'sandstone-beige', nombre: 'Sandstone Beige', hex: '#BA8B5C', r: 186, g: 139, b: 92, categoria: 'Tierra' },
+  { id: 'shamrock-green', nombre: 'Shamrock Green', hex: '#437255', r: 67, g: 114, b: 85, categoria: 'Verdes' },
+  // Fila 2
+  { id: 'sky-blue', nombre: 'Sky Blue', hex: '#6295B8', r: 98, g: 149, b: 184, categoria: 'Azules' },
+  { id: 'ash-gray', nombre: 'Ash Gray', hex: '#B8BEBA', r: 184, g: 190, b: 186, categoria: 'Neutrales' },
+  { id: 'lime-green', nombre: 'Lime Green', hex: '#58A852', r: 88, g: 168, b: 82, categoria: 'Verdes' },
+  { id: 'chestnut-brown', nombre: 'Chestnut Brown', hex: '#8B573F', r: 139, g: 87, b: 63, categoria: 'Tierra' },
+  // Fila 3
+  { id: 'pewter-gray', nombre: 'Pewter Gray', hex: '#919296', r: 145, g: 146, b: 150, categoria: 'Neutrales' },
+  { id: 'ivy-green', nombre: 'Ivy Green', hex: '#6C8F76', r: 108, g: 143, b: 118, categoria: 'Verdes' },
+  { id: 'teal', nombre: 'Teal', hex: '#208A8C', r: 32, g: 138, b: 140, categoria: 'Azules' },
+  { id: 'yellow', nombre: 'Yellow', hex: '#E2CB32', r: 226, g: 203, b: 50, categoria: 'Cálidos' },
+  // Fila 4
+  { id: 'orange', nombre: 'Orange', hex: '#DE602E', r: 222, g: 96, b: 46, categoria: 'Cálidos' },
+  { id: 'purple', nombre: 'Purple', hex: '#584B7C', r: 88, g: 75, b: 124, categoria: 'Cálidos' },
+  { id: 'cherry-red', nombre: 'Cherry Red', hex: '#B64647', r: 182, g: 70, b: 71, categoria: 'Cálidos' },
+  { id: 'gold', nombre: 'Gold', hex: '#C79138', r: 199, g: 145, b: 56, categoria: 'Cálidos' },
+  // Fila 5
+  { id: 'lilac', nombre: 'Lilac', hex: '#826EA3', r: 130, g: 110, b: 163, categoria: 'Cálidos' },
+  { id: 'cream', nombre: 'Cream', hex: '#E1DFD2', r: 225, g: 223, b: 210, categoria: 'Neutrales' },
+  { id: 'ivory', nombre: 'Ivory', hex: '#B3A481', r: 179, g: 164, b: 129, categoria: 'Tierra' },
+  { id: 'aquamarine', nombre: 'Aquamarine', hex: '#17B2C4', r: 23, g: 178, b: 196, categoria: 'Azules' },
+  // Fila 6
+  { id: 'white', nombre: 'White', hex: '#EAEFEA', r: 234, g: 239, b: 234, categoria: 'Neutrales' },
+  { id: 'raspberry-pink', nombre: 'Raspberry Pink', hex: '#8E2848', r: 142, g: 40, b: 72, categoria: 'Cálidos' },
+  { id: 'charcoal-gray', nombre: 'Charcoal Gray', hex: '#56555A', r: 86, g: 85, b: 90, categoria: 'Neutrales' }
 ];
+
 
 export const MODOS_DISPONIBLES: ModoVisualizador[] = [
   {

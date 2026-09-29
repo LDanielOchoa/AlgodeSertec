@@ -50,6 +50,8 @@ export class MotorEscena3D implements IMotorEscena3D {
 
   private idAnimacion: number | null = null;
   private manejadorResize: (() => void) | null = null;
+  private observadorResize: ResizeObserver | null = null;
+
 
   constructor(generadorPBR: IServicioTexturaPBR) {
     this.generadorPBR = generadorPBR;
@@ -101,8 +103,15 @@ export class MotorEscena3D implements IMotorEscena3D {
     this.manejadorResize = () => this.redimensionar();
     window.addEventListener('resize', this.manejadorResize);
 
+    if (typeof ResizeObserver !== 'undefined' && this.contenedor) {
+      const ro = new ResizeObserver(() => this.redimensionar());
+      ro.observe(this.contenedor);
+      this.observadorResize = ro;
+    }
+
     this.iniciarBucle();
   }
+
 
   private configurarIluminacion3D(): void {
     if (!this.escena) return;
@@ -110,10 +119,11 @@ export class MotorEscena3D implements IMotorEscena3D {
 
     this.grupoLuces = new THREE.Group();
 
-    const luzAmbiente = new THREE.AmbientLight(0xFFFFFF, 0.85);
+    // Iluminación ambiental suave y difusa (acabado mate de caucho EPDM)
+    const luzAmbiente = new THREE.AmbientLight(0xFFFFFF, 1.15);
     this.grupoLuces.add(luzAmbiente);
 
-    const luzPrincipal = new THREE.DirectionalLight(0xFFFAF0, 2.2);
+    const luzPrincipal = new THREE.DirectionalLight(0xFFFAF0, 1.1);
     luzPrincipal.position.set(5, 8, 4);
     luzPrincipal.castShadow = true;
     luzPrincipal.shadow.mapSize.width = 2048;
@@ -121,7 +131,7 @@ export class MotorEscena3D implements IMotorEscena3D {
     luzPrincipal.shadow.bias = -0.0003;
     this.grupoLuces.add(luzPrincipal);
 
-    const luzRelleno = new THREE.DirectionalLight(0x93C5FD, 0.7);
+    const luzRelleno = new THREE.DirectionalLight(0xF1F5F9, 0.4);
     luzRelleno.position.set(-4, 7, -3);
     this.grupoLuces.add(luzRelleno);
 
@@ -133,8 +143,8 @@ export class MotorEscena3D implements IMotorEscena3D {
 
     this.materialPavimento = new THREE.MeshStandardMaterial({
       color: 0xFFFFFF,
-      roughness: 0.52,
-      metalness: 0.03,
+      roughness: 0.98, // Acabado completamente mate sin brillos reflectantes
+      metalness: 0.0,
       displacementScale: this.escalaRelieve
     });
 
@@ -170,7 +180,7 @@ export class MotorEscena3D implements IMotorEscena3D {
     if (this.materialPavimento) {
       this.materialPavimento.map = this.texturaDifusa;
       this.materialPavimento.normalMap = this.texturaNormal;
-      this.materialPavimento.normalScale.set(2.4, 2.4);
+      this.materialPavimento.normalScale.set(1.2, 1.2);
       this.materialPavimento.displacementMap = this.texturaDesplazamiento;
       this.materialPavimento.displacementScale = this.escalaRelieve;
       this.materialPavimento.needsUpdate = true;
@@ -241,6 +251,8 @@ export class MotorEscena3D implements IMotorEscena3D {
   public destruir(): void {
     if (this.idAnimacion) cancelAnimationFrame(this.idAnimacion);
     if (this.manejadorResize) window.removeEventListener('resize', this.manejadorResize);
+    this.observadorResize?.disconnect();
     this.renderizador?.dispose();
   }
+
 }

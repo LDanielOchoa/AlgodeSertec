@@ -4,8 +4,7 @@ import {
   type IMotorEscena3D,
   type NivelZoomPreset
 } from '../servicios/MotorEscena3D';
-import { Button, ButtonGroup, Chip, Tooltip } from '@heroui/react';
-import { ZoomIn, ZoomOut, Sparkles } from 'lucide-react';
+import { ZoomIn, ZoomOut } from 'lucide-react';
 
 interface PropiedadesVisorEscena3D {
   motor3D: IMotorEscena3D;
@@ -15,7 +14,7 @@ interface PropiedadesVisorEscena3D {
 const PRESETS: NivelZoomPreset[] = ['1x', '1.5x', '2x', '3.5x'];
 
 /**
- * Componente visor de muestra 3D cenital con componentes HeroUI (Button, ButtonGroup, Chip, Tooltip).
+ * Componente visor de muestra 3D cenital.
  * Vista superior en nivel 2x por defecto con 4 niveles predefinidos y zoom vertical continuo.
  * Cumple con SRP.
  */
@@ -46,101 +45,74 @@ export function VisorEscena3D({ motor3D, estaMezclando = false }: PropiedadesVis
   };
 
   return (
-    <div className="w-full">
-      <div className="bg-white rounded-3xl border border-zinc-200 p-4 sm:p-6 relative group">
+    <div className="w-full h-full flex flex-col">
+      <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-sm relative group flex-1 flex flex-col min-h-[460px] lg:min-h-0">
         
-        {/* Contenedor del lienzo 3D Three.js */}
-        <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden border border-zinc-200 bg-[#FAFAFC] flex items-center justify-center">
+        {/* Contenedor del lienzo 3D Three.js que se expande a la misma altura */}
+        <div className="relative flex-1 w-full rounded-2xl overflow-hidden bg-[#FAFAFC] flex items-center justify-center min-h-[400px] lg:min-h-0">
           
           {/* Viewport Three.js */}
           <div
             ref={contenedorRef}
-            className={`w-full h-full transition-opacity duration-300 ${
+            className={`absolute inset-0 w-full h-full transition-opacity duration-300 ${
               estaMezclando ? 'opacity-70 scale-[0.99]' : 'opacity-100 scale-100'
             }`}
           />
 
-          {/* Insignia de estado estilo HeroUI Chip */}
-          <div className="absolute top-3.5 left-3.5 pointer-events-none">
-            <Chip
-              variant="flat"
-              size="sm"
-              radius="full"
-              className="bg-white/95 backdrop-blur-md border border-zinc-200 text-zinc-800 font-semibold"
-              startContent={
-                <span className="relative flex h-2 w-2 mx-1">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#006FEE]" />
-                </span>
-              }
-            >
-              <span className="flex items-center gap-1 text-[11px]">
-                <Sparkles className="w-3 h-3 text-[#006FEE]" /> Vista 3D Digital
-              </span>
-            </Chip>
-          </div>
-
-          {/* Widget flotante de Zoom usando ButtonGroup de HeroUI */}
-          <div className="absolute bottom-3.5 right-3.5 flex items-center gap-1.5 bg-white/95 backdrop-blur-md border border-zinc-200 rounded-2xl p-1.5">
+          {/* Widget flotante de Zoom */}
+          <div className="absolute bottom-3.5 right-3.5 flex items-center gap-1 bg-white/95 backdrop-blur-md rounded-2xl p-1.5 shadow-sm z-10">
             
-            <Tooltip content="Alejar zoom" size="sm" radius="md">
-              <Button
-                isIconOnly
-                size="sm"
-                variant="light"
-                radius="lg"
-                className="text-zinc-600 hover:text-[#006FEE] min-w-7 w-7 h-7"
-                onPress={manejarZoomOut}
-              >
-                <ZoomOut className="w-3.5 h-3.5" />
-              </Button>
-            </Tooltip>
+            <button
+              type="button"
+              onClick={manejarZoomOut}
+              title="Alejar zoom"
+              aria-label="Alejar zoom"
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-600 hover:text-[#006FEE] hover:bg-zinc-100 transition-colors cursor-pointer"
+            >
+              <ZoomOut className="w-3.5 h-3.5" />
+            </button>
 
-            <div className="w-[1px] h-4 bg-zinc-200" />
+            <div className="w-[1px] h-4 bg-zinc-200/80 mx-0.5" />
 
-            {/* 4 Niveles de Zoom con ButtonGroup de HeroUI */}
-            <ButtonGroup size="sm" variant="flat" radius="lg" className="bg-zinc-100 p-0.5 border border-zinc-200">
+            {/* 4 Niveles de Zoom */}
+            <div className="flex items-center gap-0.5 bg-zinc-100/80 p-0.5 rounded-xl">
               {PRESETS.map(preset => {
                 const esSeleccionado = zoomActivo === preset;
                 const info = NIVELES_ZOOM[preset];
 
                 return (
-                  <Tooltip key={preset} content={info.descripcion} size="sm" radius="md">
-                    <Button
-                      size="sm"
-                      radius="md"
-                      variant={esSeleccionado ? 'solid' : 'light'}
-                      color={esSeleccionado ? 'primary' : 'default'}
-                      className={`min-w-8 h-7 text-[11px] font-bold ${
-                        esSeleccionado ? 'bg-[#006FEE] text-white shadow-none' : 'text-zinc-600 hover:text-zinc-900'
-                      }`}
-                      onPress={() => seleccionarPresetZoom(preset)}
-                    >
-                      {preset}
-                    </Button>
-                  </Tooltip>
+                  <button
+                    key={preset}
+                    type="button"
+                    title={info.descripcion}
+                    onClick={() => seleccionarPresetZoom(preset)}
+                    className={`min-w-8 h-7 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                      esSeleccionado
+                        ? 'bg-[#006FEE] text-white shadow-xs'
+                        : 'text-zinc-600 hover:text-zinc-900 hover:bg-white/60'
+                    }`}
+                  >
+                    {preset}
+                  </button>
                 );
               })}
-            </ButtonGroup>
+            </div>
 
-            <div className="w-[1px] h-4 bg-zinc-200" />
+            <div className="w-[1px] h-4 bg-zinc-200/80 mx-0.5" />
 
-            <Tooltip content="Acercar zoom" size="sm" radius="md">
-              <Button
-                isIconOnly
-                size="sm"
-                variant="light"
-                radius="lg"
-                className="text-zinc-600 hover:text-[#006FEE] min-w-7 w-7 h-7"
-                onPress={manejarZoomIn}
-              >
-                <ZoomIn className="w-3.5 h-3.5" />
-              </Button>
-            </Tooltip>
+            <button
+              type="button"
+              onClick={manejarZoomIn}
+              title="Acercar zoom"
+              aria-label="Acercar zoom"
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-600 hover:text-[#006FEE] hover:bg-zinc-100 transition-colors cursor-pointer"
+            >
+              <ZoomIn className="w-3.5 h-3.5" />
+            </button>
           </div>
 
           {/* Pista de interacción */}
-          <div className="absolute bottom-3.5 left-3.5 bg-zinc-900/70 backdrop-blur-xs text-white text-[10px] font-medium px-2.5 py-1 rounded-full pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div className="absolute bottom-3.5 left-3.5 bg-zinc-900/70 backdrop-blur-xs text-white text-[10px] font-medium px-2.5 py-1 rounded-full pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
             Scroll o botones para zoom
           </div>
 
@@ -149,3 +121,6 @@ export function VisorEscena3D({ motor3D, estaMezclando = false }: PropiedadesVis
     </div>
   );
 }
+
+
+
