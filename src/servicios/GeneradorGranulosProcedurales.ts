@@ -11,7 +11,7 @@ export interface IServicioGranulosProcedurales {
 export class GeneradorGranulosProcedurales implements IServicioGranulosProcedurales {
   private cacheSprites: Map<string, HTMLCanvasElement[]> = new Map();
   private variacionesPorColor: number = 36;
-  private tamanoSprite: number = 36;
+  private tamanoSprite: number = 38;
 
   public obtenerSprites(color: DefinicionColor): HTMLCanvasElement[] {
     if (this.cacheSprites.has(color.id)) {
@@ -28,7 +28,7 @@ export class GeneradorGranulosProcedurales implements IServicioGranulosProcedura
   }
 
   /**
-   * Genera un gránulo de caucho EPDM con geometría facetada, volumen 3D y corte angulado.
+   * Genera un gránulo de caucho EPDM con granulometría realista (1.0 - 3.5 mm), acabado mate y bordes naturales.
    */
   private crearGranuloCaucho3D(color: DefinicionColor, semilla: number): HTMLCanvasElement {
     const lienzo = document.createElement('canvas');
@@ -40,41 +40,39 @@ export class GeneradorGranulosProcedurales implements IServicioGranulosProcedura
     const centroX = this.tamanoSprite / 2;
     const centroY = this.tamanoSprite / 2;
 
-    // Generador pseudoaleatorio determinista para variedad consistente
+    // Generador pseudoaleatorio determinista
     let rnd = (semilla * 16807 + 789221) % 2147483647;
     const siguienteRnd = () => {
       rnd = (rnd * 16807 + 789221) % 2147483647;
       return (rnd % 10000) / 10000;
     };
 
-    // Tamaño controlado para evitar formas demasiado anchas o desproporcionadas
-    const radioBase = 8.5 + siguienteRnd() * 3.5;
-    const numeroVertices = 5 + Math.floor(siguienteRnd() * 3); // 5 a 7 vértices angulares
+    // Proporciones naturales de gránulo de caucho triturado
+    const radioBase = 8.5 + siguienteRnd() * 3.2;
+    const numeroVertices = 6 + Math.floor(siguienteRnd() * 3); // 6 a 8 vértices
     const vertices: Array<{ x: number; y: number }> = [];
     const pasoAngulo = (Math.PI * 2) / numeroVertices;
 
-    // Ligera variación tonal del caucho (microvariación de lote de fabricación)
-    const factorTono = 0.92 + siguienteRnd() * 0.16;
+    const factorTono = 0.94 + siguienteRnd() * 0.12;
     const rBase = Math.min(255, Math.max(0, Math.round(color.r * factorTono)));
     const gBase = Math.min(255, Math.max(0, Math.round(color.g * factorTono)));
     const bBase = Math.min(255, Math.max(0, Math.round(color.b * factorTono)));
 
-    // Construir polígono angular con proporciones simétricas de viruta
     for (let i = 0; i < numeroVertices; i++) {
-      const ang = i * pasoAngulo + (siguienteRnd() - 0.5) * (pasoAngulo * 0.4);
-      const dist = radioBase * (0.82 + siguienteRnd() * 0.36);
+      const ang = i * pasoAngulo + (siguienteRnd() - 0.5) * (pasoAngulo * 0.35);
+      const dist = radioBase * (0.85 + siguienteRnd() * 0.30);
       vertices.push({
         x: centroX + Math.cos(ang) * dist,
         y: centroY + Math.sin(ang) * dist
       });
     }
 
-    // 1. Sombra de contacto oclusión ambiental inferior suave
+    // 1. Sombra de contacto oclusión ambiental
     ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-    ctx.shadowBlur = 2;
-    ctx.shadowOffsetX = 0.5;
-    ctx.shadowOffsetY = 1.2;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.28)';
+    ctx.shadowBlur = 2.0;
+    ctx.shadowOffsetX = 0.6;
+    ctx.shadowOffsetY = 1.4;
 
     ctx.beginPath();
     ctx.moveTo(vertices[0].x, vertices[0].y);
@@ -100,7 +98,6 @@ export class GeneradorGranulosProcedurales implements IServicioGranulosProcedura
       centroX - radioBase, centroY - radioBase,
       centroX + radioBase, centroY + radioBase
     );
-    // Gradiente difuso suave sin brillos plásticos
     const colorLuz = `rgb(${Math.min(255, rBase + 3)}, ${Math.min(255, gBase + 3)}, ${Math.min(255, bBase + 3)})`;
     const colorMedio = `rgb(${rBase}, ${gBase}, ${bBase})`;
     const colorSombra = `rgb(${Math.max(0, rBase - 8)}, ${Math.max(0, gBase - 8)}, ${Math.max(0, bBase - 8)})`;
@@ -111,7 +108,7 @@ export class GeneradorGranulosProcedurales implements IServicioGranulosProcedura
     ctx.fillStyle = degradadoLuz;
     ctx.fill();
 
-    // 3. Facetas angulares con sombreado difuso mate (sin reflejo especular blanco)
+    // 3. Facetas angulares con sombreado sutil
     const puntoCima = {
       x: centroX + (siguienteRnd() - 0.5) * 2.5,
       y: centroY + (siguienteRnd() - 0.5) * 2.5
@@ -129,27 +126,26 @@ export class GeneradorGranulosProcedurales implements IServicioGranulosProcedura
 
       const dx = v2.x - v1.x;
       const dy = v2.y - v1.y;
-      // Normal simulada con dirección de luz suave
       const iluminacionFaceta = (dx * -0.6 + dy * -0.8) / (Math.hypot(dx, dy) || 1);
 
       if (iluminacionFaceta > 0) {
         ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(0.02, iluminacionFaceta * 0.02)})`;
       } else {
-        ctx.fillStyle = `rgba(0, 0, 0, ${Math.min(0.10, Math.abs(iluminacionFaceta) * 0.10)})`;
+        ctx.fillStyle = `rgba(0, 0, 0, ${Math.min(0.09, Math.abs(iluminacionFaceta) * 0.09)})`;
       }
       ctx.fill();
     }
 
-    // 4. Micro-textura porosa que absorbe la luz (efecto mate amortiguante)
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
-    for (let k = 0; k < 5; k++) {
+    // 4. Micro-porosidad
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+    for (let k = 0; k < 6; k++) {
       const px = centroX + (siguienteRnd() - 0.5) * radioBase * 1.2;
       const py = centroY + (siguienteRnd() - 0.5) * radioBase * 1.2;
       ctx.fillRect(px, py, 1.2, 1.2);
     }
 
     // 5. Contorno de definición suave
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.14)';
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.12)';
     ctx.lineWidth = 0.5;
     ctx.beginPath();
     ctx.moveTo(vertices[0].x, vertices[0].y);

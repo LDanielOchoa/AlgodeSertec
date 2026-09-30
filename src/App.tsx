@@ -143,7 +143,7 @@ export function App() {
                   Composición de Colores
                 </label>
 
-                <div className="space-y-2.5">
+                <div className="space-y-2.5 min-h-[350px] sm:min-h-[362px]">
                   {ranuras.map((ranura, idx) => (
                     <FilaColorStudio
                       key={idx}
@@ -170,7 +170,7 @@ export function App() {
                 className="flex-1 flex items-center justify-center gap-2 bg-zinc-900 hover:bg-black active:bg-zinc-800 text-white font-semibold text-xs sm:text-sm h-12 rounded-2xl transition-all cursor-pointer shadow-xs"
               >
                 <Dices className={`w-4 h-4 text-[#006FEE] ${estaMezclando ? 'animate-spin' : ''}`} />
-                <span>Remezclar 3D</span>
+                <span>Remezclar</span>
               </button>
 
               <button

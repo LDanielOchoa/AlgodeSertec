@@ -134,7 +134,7 @@ export const ModalCatalogoColores: React.FC<ModalCatalogoColoresProps> = ({
       aria-labelledby="modal-catalogo-titulo"
     >
       <div
-        className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[85vh] max-h-[800px] min-h-[500px]"
         onClick={e => e.stopPropagation()}
       >
         {/* Cabecera del Modal */}
@@ -285,9 +285,6 @@ export const ModalCatalogoColores: React.FC<ModalCatalogoColoresProps> = ({
                         <h3 className="text-xs font-bold text-zinc-900 truncate group-hover:text-[#006FEE] transition-colors">
                           {color.nombre}
                         </h3>
-                        <p className="text-[10px] text-zinc-400 font-mono">
-                          Gránulo 1.0 - 3.5 mm
-                        </p>
                       </div>
 
                       {!yaSeleccionado && (

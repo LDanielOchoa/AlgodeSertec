@@ -19,8 +19,8 @@ export interface IServicioTexturaPBR {
  */
 export class GeneradorTexturaPBR implements IServicioTexturaPBR {
   private generadorSprites: IServicioGranulosProcedurales;
-  private anchoTextura: number = 1024;
-  private altoTextura: number = 1024;
+  private anchoTextura: number = 2048;
+  private altoTextura: number = 2048;
 
   constructor(generadorSprites: IServicioGranulosProcedurales) {
     this.generadorSprites = generadorSprites;
@@ -29,7 +29,7 @@ export class GeneradorTexturaPBR implements IServicioTexturaPBR {
   public generarMapasTextura(
     ranuras: RanuraColor[],
     idPatron: string = 'uniforme',
-    tamanoGranulo: number = 16
+    tamanoGranulo: number = 22
   ): {
     lienzoDifuso: HTMLCanvasElement;
     lienzoNormal: HTMLCanvasElement;
@@ -59,7 +59,7 @@ export class GeneradorTexturaPBR implements IServicioTexturaPBR {
       };
     }
 
-    // 1. Capa base de virutas entrelazadas con granulometría EPDM
+    // 1. Capa base de virutas entrelazadas con granulometría EPDM ultra nítida
     this.dibujarMicroVirutasEntrelazadas(ctxDifuso, ctxDesplazamiento, ranurasActivas, tamanoGranulo);
 
     // 2. Aplicar figuras y patrones arquitectónicos 3D
@@ -87,14 +87,18 @@ export class GeneradorTexturaPBR implements IServicioTexturaPBR {
     });
 
     const ranuraDominante = [...ranurasActivas].sort((a, b) => b.porcentaje - a.porcentaje)[0];
-    ctxColor.fillStyle = ranuraDominante.color!.hex;
+    const baseColor = ranuraDominante.color!;
+    const rFondo = Math.max(0, Math.round(baseColor.r * 0.72));
+    const gFondo = Math.max(0, Math.round(baseColor.g * 0.72));
+    const bFondo = Math.max(0, Math.round(baseColor.b * 0.72));
+    ctxColor.fillStyle = `rgb(${rFondo}, ${gFondo}, ${bFondo})`;
     ctxColor.fillRect(0, 0, this.anchoTextura, this.altoTextura);
 
     ctxAltura.fillStyle = '#404040';
     ctxAltura.fillRect(0, 0, this.anchoTextura, this.altoTextura);
 
-    const pasoX = tamanoGranulo * 0.52;
-    const pasoY = tamanoGranulo * 0.46;
+    const pasoX = tamanoGranulo * 0.48;
+    const pasoY = tamanoGranulo * 0.44;
     const columnas = Math.ceil(this.anchoTextura / pasoX) + 2;
     const filas = Math.ceil(this.altoTextura / pasoY) + 2;
     const puntos: Array<{ x: number; y: number; escala: number; rotacion: number; alturaGris: number }> = [];
@@ -105,9 +109,9 @@ export class GeneradorTexturaPBR implements IServicioTexturaPBR {
         puntos.push({
           x: c * pasoX + desfaseX + (Math.random() - 0.5) * (pasoX * 0.45),
           y: f * pasoY + (Math.random() - 0.5) * (pasoY * 0.45),
-          escala: 0.9 + Math.random() * 0.25,
+          escala: 0.95 + Math.random() * 0.28,
           rotacion: Math.random() * Math.PI * 2,
-          alturaGris: 150 + Math.floor(Math.random() * 85)
+          alturaGris: 155 + Math.floor(Math.random() * 80)
         });
       }
     }

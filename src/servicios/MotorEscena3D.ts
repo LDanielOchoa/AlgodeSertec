@@ -77,10 +77,11 @@ export class MotorEscena3D implements IMotorEscena3D {
     });
     this.renderizador.setSize(ancho, alto);
     this.renderizador.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderizador.outputColorSpace = THREE.SRGBColorSpace;
     this.renderizador.shadowMap.enabled = true;
     this.renderizador.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderizador.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderizador.toneMappingExposure = 1.18;
+    this.renderizador.toneMappingExposure = 1.0;
 
     contenedor.innerHTML = '';
     contenedor.appendChild(this.renderizador.domElement);
@@ -119,19 +120,19 @@ export class MotorEscena3D implements IMotorEscena3D {
 
     this.grupoLuces = new THREE.Group();
 
-    // Iluminación ambiental suave y difusa (acabado mate de caucho EPDM)
-    const luzAmbiente = new THREE.AmbientLight(0xFFFFFF, 1.15);
+    // Iluminación ambiental y direccional calibrada para fidelidad y viveza de los colores EPDM
+    const luzAmbiente = new THREE.AmbientLight(0xFFFFFF, 0.75);
     this.grupoLuces.add(luzAmbiente);
 
-    const luzPrincipal = new THREE.DirectionalLight(0xFFFAF0, 1.1);
-    luzPrincipal.position.set(5, 8, 4);
+    const luzPrincipal = new THREE.DirectionalLight(0xFFFFFF, 0.70);
+    luzPrincipal.position.set(4, 8, 3);
     luzPrincipal.castShadow = true;
     luzPrincipal.shadow.mapSize.width = 2048;
     luzPrincipal.shadow.mapSize.height = 2048;
     luzPrincipal.shadow.bias = -0.0003;
     this.grupoLuces.add(luzPrincipal);
 
-    const luzRelleno = new THREE.DirectionalLight(0xF1F5F9, 0.4);
+    const luzRelleno = new THREE.DirectionalLight(0xFFFFFF, 0.25);
     luzRelleno.position.set(-4, 7, -3);
     this.grupoLuces.add(luzRelleno);
 
@@ -143,7 +144,7 @@ export class MotorEscena3D implements IMotorEscena3D {
 
     this.materialPavimento = new THREE.MeshStandardMaterial({
       color: 0xFFFFFF,
-      roughness: 0.98, // Acabado completamente mate sin brillos reflectantes
+      roughness: 0.95, // Acabado completamente mate sin brillos reflectantes
       metalness: 0.0,
       displacementScale: this.escalaRelieve
     });
@@ -168,13 +169,21 @@ export class MotorEscena3D implements IMotorEscena3D {
     if (this.texturaDesplazamiento) this.texturaDesplazamiento.dispose();
 
     this.texturaDifusa = new THREE.CanvasTexture(lienzoDifuso);
+    this.texturaDifusa.colorSpace = THREE.SRGBColorSpace;
     this.texturaNormal = new THREE.CanvasTexture(lienzoNormal);
     this.texturaDesplazamiento = new THREE.CanvasTexture(lienzoDesplazamiento);
+
+    const maxAnisotropia = this.renderizador ? this.renderizador.capabilities.getMaxAnisotropy() : 8;
 
     [this.texturaDifusa, this.texturaNormal, this.texturaDesplazamiento].forEach(tex => {
       tex.wrapS = THREE.RepeatWrapping;
       tex.wrapT = THREE.RepeatWrapping;
       tex.repeat.set(this.repeticionTextura, this.repeticionTextura);
+      tex.anisotropy = maxAnisotropia;
+      tex.generateMipmaps = true;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.needsUpdate = true;
     });
 
     if (this.materialPavimento) {
