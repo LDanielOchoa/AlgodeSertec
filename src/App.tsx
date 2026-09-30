@@ -172,16 +172,6 @@ export function App() {
                 <Dices className={`w-4 h-4 text-[#006FEE] ${estaMezclando ? 'animate-spin' : ''}`} />
                 <span>Remezclar</span>
               </button>
-
-              <button
-                type="button"
-                onClick={guardarImagen}
-                title="Exportar Ficha 3D"
-                className="flex items-center justify-center gap-2 bg-[#006FEE] hover:bg-[#005BC4] active:bg-[#004EA8] text-white font-semibold text-xs sm:text-sm h-12 px-4 rounded-2xl transition-all cursor-pointer shadow-xs"
-              >
-                <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">Exportar Ficha</span>
-              </button>
             </div>
 
           </aside>
