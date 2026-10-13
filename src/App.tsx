@@ -14,8 +14,9 @@ import { PestanasModo } from './componentes/PestanasModo';
 import { FilaColorStudio } from './componentes/FilaColorStudio';
 import { BarraBalanceMezcla } from './componentes/BarraBalanceMezcla';
 import { VisorEscena3D } from './componentes/VisorEscena3D';
+import { VisorVistaReal } from './componentes/VisorVistaReal';
 import { ModalCatalogoColores } from './componentes/ModalCatalogoColores';
-import { Dices, Download, SlidersHorizontal } from 'lucide-react';
+import { Box, Dices, Download, Image as ImageIcon, SlidersHorizontal } from 'lucide-react';
 
 
 
@@ -30,6 +31,8 @@ export function App() {
   const motor3D = useMemo(() => new MotorEscena3D(generadorPBR), [generadorPBR]);
   const exportador = useMemo(() => new ServicioExportacion(), []);
 
+  const [vistaActiva, setVistaActiva] = useState<'3d' | 'real'>('3d');
+  const [versionMezcla, setVersionMezcla] = useState<number>(0);
   const [modoSeleccionado, setModoSeleccionado] = useState<number>(2);
   const [estaMezclando, setEstaMezclando] = useState<boolean>(false);
   const [ranuras, setRanuras] = useState<RanuraColor[]>([
@@ -98,6 +101,7 @@ export function App() {
   const mezclarColores = () => {
     setEstaMezclando(true);
     actualizarEscena3D();
+    setVersionMezcla(v => v + 1);
     setTimeout(() => setEstaMezclando(false), 250);
   };
 
@@ -176,12 +180,45 @@ export function App() {
 
           </aside>
 
-          {/* Panel Derecho: Escenario 3D Central (7 columnas) */}
+          {/* Panel Derecho: Escenario de visualización (7 columnas) */}
           <section className="lg:col-span-7 flex flex-col h-full">
+            <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-sm relative group flex-1 flex flex-col gap-3 min-h-[460px] lg:min-h-0">
 
-            {/* Viewport 3D Three.js */}
-            <VisorEscena3D motor3D={motor3D} estaMezclando={estaMezclando} />
+              {/* Selector de vista: Render 3D / Vista Real */}
+              <div className="flex items-center justify-between">
+                <div className="inline-flex items-center gap-0.5 bg-zinc-100 p-1 rounded-xl">
+                  {([
+                    { id: '3d', etiqueta: 'Render 3D', Icono: Box },
+                    { id: 'real', etiqueta: 'Vista Real', Icono: ImageIcon }
+                  ] as const).map(({ id, etiqueta, Icono }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setVistaActiva(id)}
+                      className={`flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                        vistaActiva === id
+                          ? 'bg-white text-[#006FEE] shadow-xs'
+                          : 'text-zinc-600 hover:text-zinc-900'
+                      }`}
+                    >
+                      <Icono className="w-3.5 h-3.5" />
+                      {etiqueta}
+                    </button>
+                  ))}
+                </div>
+                <span className="hidden sm:block text-[11px] font-medium text-zinc-500">
+                  {vistaActiva === '3d' ? 'Muestra cenital de la mezcla' : 'Mezcla aplicada en un parque real'}
+                </span>
+              </div>
 
+              {/* Viewport 3D Three.js (se mantiene montado para conservar el contexto WebGL) */}
+              <VisorEscena3D motor3D={motor3D} estaMezclando={estaMezclando} visible={vistaActiva === '3d'} />
+
+              {/* Vista real fotográfica */}
+              {vistaActiva === 'real' && (
+                <VisorVistaReal ranuras={ranuras} generadorPBR={generadorPBR} activo versionMezcla={versionMezcla} />
+              )}
+            </div>
           </section>
 
         </div>

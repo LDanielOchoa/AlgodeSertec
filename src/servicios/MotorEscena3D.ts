@@ -221,6 +221,7 @@ export class MotorEscena3D implements IMotorEscena3D {
     if (!this.contenedor || !this.renderizador || !this.camara) return;
     const ancho = this.contenedor.clientWidth;
     const alto = this.contenedor.clientHeight;
+    if (ancho === 0 || alto === 0) return;
     this.camara.aspect = ancho / alto;
     this.camara.updateProjectionMatrix();
     this.renderizador.setSize(ancho, alto);

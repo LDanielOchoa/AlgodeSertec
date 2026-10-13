@@ -11,6 +11,7 @@ export interface IServicioTexturaPBR {
     lienzoNormal: HTMLCanvasElement;
     lienzoDesplazamiento: HTMLCanvasElement;
   };
+  generarMapaDifuso(ranuras: RanuraColor[], tamanoGranulo?: number): HTMLCanvasElement;
 }
 
 /**
@@ -73,9 +74,30 @@ export class GeneradorTexturaPBR implements IServicioTexturaPBR {
     return { lienzoDifuso, lienzoNormal, lienzoDesplazamiento };
   }
 
+  /**
+   * Genera únicamente el mapa difuso (color) de la mezcla, sin mapas de altura ni normales.
+   * Utilizado por la vista real fotográfica, donde solo se requiere el color de los gránulos.
+   */
+  public generarMapaDifuso(ranuras: RanuraColor[], tamanoGranulo: number = 16): HTMLCanvasElement {
+    const ranurasActivas = ranuras.filter(r => r.color !== null && r.porcentaje > 0);
+    const lienzoDifuso = document.createElement('canvas');
+    lienzoDifuso.width = this.anchoTextura;
+    lienzoDifuso.height = this.altoTextura;
+    const ctxDifuso = lienzoDifuso.getContext('2d')!;
+
+    if (ranurasActivas.length === 0) {
+      ctxDifuso.fillStyle = '#1E293B';
+      ctxDifuso.fillRect(0, 0, this.anchoTextura, this.altoTextura);
+      return lienzoDifuso;
+    }
+
+    this.dibujarMicroVirutasEntrelazadas(ctxDifuso, null, ranurasActivas, tamanoGranulo);
+    return lienzoDifuso;
+  }
+
   private dibujarMicroVirutasEntrelazadas(
     ctxColor: CanvasRenderingContext2D,
-    ctxAltura: CanvasRenderingContext2D,
+    ctxAltura: CanvasRenderingContext2D | null,
     ranurasActivas: RanuraColor[],
     tamanoGranulo: number
   ): void {
@@ -94,8 +116,10 @@ export class GeneradorTexturaPBR implements IServicioTexturaPBR {
     ctxColor.fillStyle = `rgb(${rFondo}, ${gFondo}, ${bFondo})`;
     ctxColor.fillRect(0, 0, this.anchoTextura, this.altoTextura);
 
-    ctxAltura.fillStyle = '#404040';
-    ctxAltura.fillRect(0, 0, this.anchoTextura, this.altoTextura);
+    if (ctxAltura) {
+      ctxAltura.fillStyle = '#404040';
+      ctxAltura.fillRect(0, 0, this.anchoTextura, this.altoTextura);
+    }
 
     const pasoX = tamanoGranulo * 0.48;
     const pasoY = tamanoGranulo * 0.44;
@@ -135,6 +159,7 @@ export class GeneradorTexturaPBR implements IServicioTexturaPBR {
       ctxColor.drawImage(sprite, -diam / 2, -diam / 2, diam, diam);
       ctxColor.restore();
 
+      if (!ctxAltura) continue;
       ctxAltura.save();
       ctxAltura.translate(p.x, p.y);
       ctxAltura.rotate(p.rotacion);

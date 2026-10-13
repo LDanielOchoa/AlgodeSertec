@@ -9,6 +9,8 @@ import { ZoomIn, ZoomOut } from 'lucide-react';
 interface PropiedadesVisorEscena3D {
   motor3D: IMotorEscena3D;
   estaMezclando?: boolean;
+  /** Permite ocultar el visor sin desmontarlo (conserva el contexto WebGL). */
+  visible?: boolean;
 }
 
 const PRESETS: NivelZoomPreset[] = ['1x', '1.5x', '2x', '3.5x'];
@@ -18,7 +20,7 @@ const PRESETS: NivelZoomPreset[] = ['1x', '1.5x', '2x', '3.5x'];
  * Vista superior en nivel 2x por defecto con 4 niveles predefinidos y zoom vertical continuo.
  * Cumple con SRP.
  */
-export function VisorEscena3D({ motor3D, estaMezclando = false }: PropiedadesVisorEscena3D) {
+export function VisorEscena3D({ motor3D, estaMezclando = false, visible = true }: PropiedadesVisorEscena3D) {
   const contenedorRef = useRef<HTMLDivElement | null>(null);
   const [zoomActivo, setZoomActivo] = useState<NivelZoomPreset>('2x');
 
@@ -45,11 +47,11 @@ export function VisorEscena3D({ motor3D, estaMezclando = false }: PropiedadesVis
   };
 
   return (
-    <div className="w-full h-full flex flex-col">
-      <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-sm relative group flex-1 flex flex-col min-h-[460px] lg:min-h-0">
-        
-        {/* Contenedor del lienzo 3D Three.js que se expande a la misma altura */}
-        <div className="relative flex-1 w-full rounded-2xl overflow-hidden bg-[#FAFAFC] flex items-center justify-center min-h-[400px] lg:min-h-0">
+        <div
+          className={`relative flex-1 w-full rounded-2xl overflow-hidden bg-[#FAFAFC] items-center justify-center min-h-[400px] lg:min-h-0 ${
+            visible ? 'flex' : 'hidden'
+          }`}
+        >
           
           {/* Viewport Three.js */}
           <div
@@ -117,8 +119,6 @@ export function VisorEscena3D({ motor3D, estaMezclando = false }: PropiedadesVis
           </div>
 
         </div>
-      </div>
-    </div>
   );
 }
 
