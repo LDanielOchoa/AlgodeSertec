@@ -6,15 +6,16 @@ import type { IServicioTexturaPBR } from './GeneradorTexturaPBR';
 export type NivelZoomPreset = '1x' | '1.5x' | '2x' | '3.5x';
 
 export const NIVELES_ZOOM: Record<NivelZoomPreset, { altura: number; etiqueta: string; descripcion: string }> = {
-  '1x': { altura: 5.6, etiqueta: '1x', descripcion: 'Vista General' },
-  '1.5x': { altura: 4.0, etiqueta: '1.5x', descripcion: 'Media Superficie' },
-  '2x': { altura: 2.8, etiqueta: '2x', descripcion: 'Detalle de Mezcla' },
-  '3.5x': { altura: 1.8, etiqueta: '3.5x', descripcion: 'Macro Gránulos 3D' }
+  '1x': { altura: 5.6, etiqueta: '1x', descripcion: 'Overview' },
+  '1.5x': { altura: 4.0, etiqueta: '1.5x', descripcion: 'Mid-Surface' },
+  '2x': { altura: 2.8, etiqueta: '2x', descripcion: 'Blend Detail' },
+  '3.5x': { altura: 1.8, etiqueta: '3.5x', descripcion: 'Macro Granules' }
 };
 
 export interface IMotorEscena3D {
   inicializar(contenedor: HTMLElement): void;
   actualizarTextura(ranuras: RanuraColor[], tamanoGranulo?: number): void;
+  actualizarTexturaAsync(ranuras: RanuraColor[], tamanoGranulo?: number): Promise<boolean>;
   establecerZoomPreset(preset: NivelZoomPreset): void;
   acercarZoom(): void;
   alejarZoom(): void;
@@ -78,8 +79,7 @@ export class MotorEscena3D implements IMotorEscena3D {
     this.renderizador.setSize(ancho, alto);
     this.renderizador.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderizador.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderizador.shadowMap.enabled = true;
-    this.renderizador.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderizador.shadowMap.enabled = false;
     this.renderizador.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderizador.toneMappingExposure = 1.0;
 
@@ -126,10 +126,7 @@ export class MotorEscena3D implements IMotorEscena3D {
 
     const luzPrincipal = new THREE.DirectionalLight(0xFFFFFF, 0.70);
     luzPrincipal.position.set(4, 8, 3);
-    luzPrincipal.castShadow = true;
-    luzPrincipal.shadow.mapSize.width = 2048;
-    luzPrincipal.shadow.mapSize.height = 2048;
-    luzPrincipal.shadow.bias = -0.0003;
+    luzPrincipal.castShadow = false;
     this.grupoLuces.add(luzPrincipal);
 
     const luzRelleno = new THREE.DirectionalLight(0xFFFFFF, 0.25);
@@ -152,9 +149,33 @@ export class MotorEscena3D implements IMotorEscena3D {
     const geometria = new THREE.PlaneGeometry(6.4, 4.8, 256, 256);
     this.mallaMuestra = new THREE.Mesh(geometria, this.materialPavimento);
     this.mallaMuestra.rotation.x = -Math.PI / 2;
-    this.mallaMuestra.receiveShadow = true;
-    this.mallaMuestra.castShadow = true;
+    this.mallaMuestra.receiveShadow = false;
+    this.mallaMuestra.castShadow = false;
     this.escena.add(this.mallaMuestra);
+  }
+
+  private idActualizacion: number = 0;
+
+  /**
+   * Actualización asíncrona no bloqueante con control de concurrencia y cancelación de renders obsoletos.
+   */
+  public async actualizarTexturaAsync(ranuras: RanuraColor[], tamanoGranulo: number = 16): Promise<boolean> {
+    const miId = ++this.idActualizacion;
+    const esCancelado = () => this.idActualizacion !== miId;
+
+    const mapas = await this.generadorPBR.generarMapasTexturaAsync(
+      ranuras,
+      'uniforme',
+      tamanoGranulo,
+      esCancelado
+    );
+
+    if (!mapas || esCancelado()) {
+      return false;
+    }
+
+    this.aplicarMapasMaterial(mapas.lienzoDifuso, mapas.lienzoNormal, mapas.lienzoDesplazamiento);
+    return true;
   }
 
   public actualizarTextura(ranuras: RanuraColor[], tamanoGranulo: number = 16): void {
@@ -164,6 +185,14 @@ export class MotorEscena3D implements IMotorEscena3D {
       tamanoGranulo
     );
 
+    this.aplicarMapasMaterial(lienzoDifuso, lienzoNormal, lienzoDesplazamiento);
+  }
+
+  private aplicarMapasMaterial(
+    lienzoDifuso: HTMLCanvasElement,
+    lienzoNormal: HTMLCanvasElement,
+    lienzoDesplazamiento: HTMLCanvasElement
+  ): void {
     if (this.texturaDifusa) this.texturaDifusa.dispose();
     if (this.texturaNormal) this.texturaNormal.dispose();
     if (this.texturaDesplazamiento) this.texturaDesplazamiento.dispose();

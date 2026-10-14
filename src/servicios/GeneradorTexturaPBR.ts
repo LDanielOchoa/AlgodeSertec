@@ -1,41 +1,62 @@
 import type { RanuraColor } from '../modelos/DefinicionColor';
 import type { IServicioGranulosProcedurales } from './GeneradorGranulosProcedurales';
 
+export interface MapasPBR {
+  lienzoDifuso: HTMLCanvasElement;
+  lienzoNormal: HTMLCanvasElement;
+  lienzoDesplazamiento: HTMLCanvasElement;
+}
+
 export interface IServicioTexturaPBR {
   generarMapasTextura(
     ranuras: RanuraColor[],
     idPatron?: string,
     tamanoGranulo?: number
-  ): {
-    lienzoDifuso: HTMLCanvasElement;
-    lienzoNormal: HTMLCanvasElement;
-    lienzoDesplazamiento: HTMLCanvasElement;
-  };
+  ): MapasPBR;
+  generarMapasTexturaAsync(
+    ranuras: RanuraColor[],
+    idPatron?: string,
+    tamanoGranulo?: number,
+    esCancelado?: () => boolean
+  ): Promise<MapasPBR | null>;
   generarMapaDifuso(ranuras: RanuraColor[], tamanoGranulo?: number): HTMLCanvasElement;
+  generarMapaDifusoAsync(
+    ranuras: RanuraColor[],
+    tamanoGranulo?: number,
+    esCancelado?: () => boolean
+  ): Promise<HTMLCanvasElement | null>;
 }
 
+/** Cede el control al bucle de eventos para mantener la interfaz a 60/120 FPS sin congelamientos. */
+const cederHilo = () => new Promise<void>(resolver => {
+  if (typeof requestAnimationFrame !== 'undefined') {
+    requestAnimationFrame(() => setTimeout(resolver, 0));
+  } else {
+    setTimeout(resolver, 0);
+  }
+});
+
 /**
- * Generador de Mapas de Textura PBR (Difuso, Normal y Desplazamiento) para pavimentos y patrones de caucho EPDM 3D.
+ * Generador de Mapas de Textura PBR (Difuso, Normal y Desplazamiento) para pavimentos de caucho EPDM 3D.
+ * Implementa renderizado asíncrono no bloqueante por lotes con soporte de cancelación inmediata.
  * Cumple con SRP.
  */
 export class GeneradorTexturaPBR implements IServicioTexturaPBR {
   private generadorSprites: IServicioGranulosProcedurales;
-  private anchoTextura: number = 2048;
-  private altoTextura: number = 2048;
+  private anchoTextura: number = 1024;
+  private altoTextura: number = 1024;
 
   constructor(generadorSprites: IServicioGranulosProcedurales) {
     this.generadorSprites = generadorSprites;
   }
 
-  public generarMapasTextura(
+  /** Generación asíncrona no bloqueante que cede el hilo principal. */
+  public async generarMapasTexturaAsync(
     ranuras: RanuraColor[],
     idPatron: string = 'uniforme',
-    tamanoGranulo: number = 22
-  ): {
-    lienzoDifuso: HTMLCanvasElement;
-    lienzoNormal: HTMLCanvasElement;
-    lienzoDesplazamiento: HTMLCanvasElement;
-  } {
+    tamanoGranulo: number = 18,
+    esCancelado?: () => boolean
+  ): Promise<MapasPBR | null> {
     const ranurasActivas = ranuras.filter(r => r.color !== null && r.porcentaje > 0);
 
     const lienzoDifuso = document.createElement('canvas');
@@ -60,24 +81,110 @@ export class GeneradorTexturaPBR implements IServicioTexturaPBR {
       };
     }
 
-    // 1. Capa base de virutas entrelazadas con granulometría EPDM ultra nítida
-    this.dibujarMicroVirutasEntrelazadas(ctxDifuso, ctxDesplazamiento, ranurasActivas, tamanoGranulo);
+    if (esCancelado?.()) return null;
 
-    // 2. Aplicar figuras y patrones arquitectónicos 3D
+    // 1. Capa base de virutas entrelazadas de forma asíncrona
+    const completado = await this.dibujarMicroVirutasEntrelazadasAsync(
+      ctxDifuso,
+      ctxDesplazamiento,
+      ranurasActivas,
+      tamanoGranulo,
+      esCancelado
+    );
+    if (!completado || esCancelado?.()) return null;
+
+    // 2. Aplicar patrones arquitectónicos
     if (idPatron !== 'uniforme') {
       this.dibujarDisenos3D(ctxDifuso, ctxDesplazamiento, idPatron, ranurasActivas, tamanoGranulo);
     }
 
-    // 3. Generación del mapa de normales en alta definición
-    const lienzoNormal = this.generarMapaNormalDesdeAlturas(ctxDesplazamiento, this.anchoTextura, this.altoTextura);
+    if (esCancelado?.()) return null;
+
+    // 3. Generar mapa normal sin bloquear la interfaz
+    const lienzoNormal = await this.generarMapaNormalDesdeAlturasAsync(
+      ctxDesplazamiento,
+      this.anchoTextura,
+      this.altoTextura,
+      esCancelado
+    );
+
+    if (!lienzoNormal || esCancelado?.()) return null;
 
     return { lienzoDifuso, lienzoNormal, lienzoDesplazamiento };
   }
 
-  /**
-   * Genera únicamente el mapa difuso (color) de la mezcla, sin mapas de altura ni normales.
-   * Utilizado por la vista real fotográfica, donde solo se requiere el color de los gránulos.
-   */
+  /** Generación síncrona de respaldo. */
+  public generarMapasTextura(
+    ranuras: RanuraColor[],
+    idPatron: string = 'uniforme',
+    tamanoGranulo: number = 18
+  ): MapasPBR {
+    const ranurasActivas = ranuras.filter(r => r.color !== null && r.porcentaje > 0);
+
+    const lienzoDifuso = document.createElement('canvas');
+    lienzoDifuso.width = this.anchoTextura;
+    lienzoDifuso.height = this.altoTextura;
+    const ctxDifuso = lienzoDifuso.getContext('2d')!;
+
+    const lienzoDesplazamiento = document.createElement('canvas');
+    lienzoDesplazamiento.width = this.anchoTextura;
+    lienzoDesplazamiento.height = this.altoTextura;
+    const ctxDesplazamiento = lienzoDesplazamiento.getContext('2d')!;
+
+    if (ranurasActivas.length === 0) {
+      ctxDifuso.fillStyle = '#1E293B';
+      ctxDifuso.fillRect(0, 0, this.anchoTextura, this.altoTextura);
+      ctxDesplazamiento.fillStyle = '#808080';
+      ctxDesplazamiento.fillRect(0, 0, this.anchoTextura, this.altoTextura);
+      return {
+        lienzoDifuso,
+        lienzoNormal: this.generarMapaNormalPlano(),
+        lienzoDesplazamiento
+      };
+    }
+
+    this.dibujarMicroVirutasEntrelazadasSync(ctxDifuso, ctxDesplazamiento, ranurasActivas, tamanoGranulo);
+
+    if (idPatron !== 'uniforme') {
+      this.dibujarDisenos3D(ctxDifuso, ctxDesplazamiento, idPatron, ranurasActivas, tamanoGranulo);
+    }
+
+    const lienzoNormal = this.generarMapaNormalDesdeAlturasSync(ctxDesplazamiento, this.anchoTextura, this.altoTextura);
+    return { lienzoDifuso, lienzoNormal, lienzoDesplazamiento };
+  }
+
+  /** Genera únicamente el mapa difuso de forma asíncrona (utilizado por vista real). */
+  public async generarMapaDifusoAsync(
+    ranuras: RanuraColor[],
+    tamanoGranulo: number = 16,
+    esCancelado?: () => boolean
+  ): Promise<HTMLCanvasElement | null> {
+    const ranurasActivas = ranuras.filter(r => r.color !== null && r.porcentaje > 0);
+    const lienzoDifuso = document.createElement('canvas');
+    lienzoDifuso.width = this.anchoTextura;
+    lienzoDifuso.height = this.altoTextura;
+    const ctxDifuso = lienzoDifuso.getContext('2d')!;
+
+    if (ranurasActivas.length === 0) {
+      ctxDifuso.fillStyle = '#1E293B';
+      ctxDifuso.fillRect(0, 0, this.anchoTextura, this.altoTextura);
+      return lienzoDifuso;
+    }
+
+    if (esCancelado?.()) return null;
+
+    const completado = await this.dibujarMicroVirutasEntrelazadasAsync(
+      ctxDifuso,
+      null,
+      ranurasActivas,
+      tamanoGranulo,
+      esCancelado
+    );
+
+    if (!completado || esCancelado?.()) return null;
+    return lienzoDifuso;
+  }
+
   public generarMapaDifuso(ranuras: RanuraColor[], tamanoGranulo: number = 16): HTMLCanvasElement {
     const ranurasActivas = ranuras.filter(r => r.color !== null && r.porcentaje > 0);
     const lienzoDifuso = document.createElement('canvas');
@@ -91,11 +198,96 @@ export class GeneradorTexturaPBR implements IServicioTexturaPBR {
       return lienzoDifuso;
     }
 
-    this.dibujarMicroVirutasEntrelazadas(ctxDifuso, null, ranurasActivas, tamanoGranulo);
+    this.dibujarMicroVirutasEntrelazadasSync(ctxDifuso, null, ranurasActivas, tamanoGranulo);
     return lienzoDifuso;
   }
 
-  private dibujarMicroVirutasEntrelazadas(
+  private async dibujarMicroVirutasEntrelazadasAsync(
+    ctxColor: CanvasRenderingContext2D,
+    ctxAltura: CanvasRenderingContext2D | null,
+    ranurasActivas: RanuraColor[],
+    tamanoGranulo: number,
+    esCancelado?: () => boolean
+  ): Promise<boolean> {
+    const mapaSprites = new Map<string, HTMLCanvasElement[]>();
+    ranurasActivas.forEach(r => {
+      if (r.color) {
+        mapaSprites.set(r.color.id, this.generadorSprites.obtenerSprites(r.color));
+      }
+    });
+
+    const ranuraDominante = [...ranurasActivas].sort((a, b) => b.porcentaje - a.porcentaje)[0];
+    const baseColor = ranuraDominante.color!;
+    const rFondo = Math.max(0, Math.round(baseColor.r * 0.72));
+    const gFondo = Math.max(0, Math.round(baseColor.g * 0.72));
+    const bFondo = Math.max(0, Math.round(baseColor.b * 0.72));
+    ctxColor.fillStyle = `rgb(${rFondo}, ${gFondo}, ${bFondo})`;
+    ctxColor.fillRect(0, 0, this.anchoTextura, this.altoTextura);
+
+    if (ctxAltura) {
+      ctxAltura.fillStyle = '#404040';
+      ctxAltura.fillRect(0, 0, this.anchoTextura, this.altoTextura);
+    }
+
+    const pasoX = tamanoGranulo * 0.48;
+    const pasoY = tamanoGranulo * 0.44;
+    const columnas = Math.ceil(this.anchoTextura / pasoX) + 2;
+    const filas = Math.ceil(this.altoTextura / pasoY) + 2;
+    const puntos: Array<{ x: number; y: number; escala: number; rotacion: number; alturaGris: number }> = [];
+
+    for (let f = -1; f < filas; f++) {
+      const desfaseX = f % 2 === 0 ? 0 : pasoX / 2;
+      for (let c = -1; c < columnas; c++) {
+        puntos.push({
+          x: c * pasoX + desfaseX + (Math.random() - 0.5) * (pasoX * 0.45),
+          y: f * pasoY + (Math.random() - 0.5) * (pasoY * 0.45),
+          escala: 0.95 + Math.random() * 0.28,
+          rotacion: Math.random() * Math.PI * 2,
+          alturaGris: 155 + Math.floor(Math.random() * 80)
+        });
+      }
+    }
+
+    for (let i = puntos.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [puntos[i], puntos[j]] = [puntos[j], puntos[i]];
+    }
+
+    // Procesamiento en lotes para mantener la UI con fluidez total
+    const tamanoLote = 900;
+    for (let i = 0; i < puntos.length; i++) {
+      if (i > 0 && i % tamanoLote === 0) {
+        if (esCancelado?.()) return false;
+        await cederHilo();
+      }
+
+      const p = puntos[i];
+      const colorSeleccionado = this.seleccionarColorPonderado(ranurasActivas);
+      const sprites = mapaSprites.get(colorSeleccionado.id);
+      if (!sprites) continue;
+
+      const sprite = sprites[Math.floor(Math.random() * sprites.length)];
+      const diam = tamanoGranulo * p.escala;
+
+      ctxColor.save();
+      ctxColor.translate(p.x, p.y);
+      ctxColor.rotate(p.rotacion);
+      ctxColor.drawImage(sprite, -diam / 2, -diam / 2, diam, diam);
+      ctxColor.restore();
+
+      if (!ctxAltura) continue;
+      ctxAltura.save();
+      ctxAltura.translate(p.x, p.y);
+      ctxAltura.rotate(p.rotacion);
+      ctxAltura.fillStyle = `rgb(${p.alturaGris},${p.alturaGris},${p.alturaGris})`;
+      ctxAltura.fillRect(-diam * 0.35, -diam * 0.35, diam * 0.7, diam * 0.7);
+      ctxAltura.restore();
+    }
+
+    return true;
+  }
+
+  private dibujarMicroVirutasEntrelazadasSync(
     ctxColor: CanvasRenderingContext2D,
     ctxAltura: CanvasRenderingContext2D | null,
     ranurasActivas: RanuraColor[],
@@ -185,7 +377,7 @@ export class GeneradorTexturaPBR implements IServicioTexturaPBR {
     ctxAltura.save();
 
     if (idPatron === 'moteado-terrazzo') {
-      const cantidadPuntosFleck = 320;
+      const cantidadPuntosFleck = 220;
       for (let i = 0; i < cantidadPuntosFleck; i++) {
         const x = Math.random() * this.anchoTextura;
         const y = Math.random() * this.altoTextura;
@@ -212,7 +404,7 @@ export class GeneradorTexturaPBR implements IServicioTexturaPBR {
         ctxAltura.fillRect(x - radioFleck, y - radioFleck, radioFleck * 2, radioFleck * 2);
       }
     } else if (idPatron === 'islas-parque') {
-      const radioCirculo = 280;
+      const radioCirculo = 220;
 
       ctxColor.strokeStyle = col2;
       ctxColor.lineWidth = 12;
@@ -238,11 +430,11 @@ export class GeneradorTexturaPBR implements IServicioTexturaPBR {
       ctxAltura.arc(centroX + 70, centroY + 70, radioCirculo * 0.75, Math.PI * 0.7, Math.PI * 2.1);
       ctxAltura.stroke();
     } else if (idPatron === 'geometria-rayuela') {
-      const pasoCuadricula = 90;
+      const pasoCuadricula = 80;
       ctxColor.strokeStyle = col2;
-      ctxColor.lineWidth = 3.5;
+      ctxColor.lineWidth = 3;
       ctxAltura.strokeStyle = '#E5E5E5';
-      ctxAltura.lineWidth = 3.5;
+      ctxAltura.lineWidth = 3;
 
       for (let x = pasoCuadricula; x < this.anchoTextura; x += pasoCuadricula) {
         ctxColor.beginPath();
@@ -267,53 +459,75 @@ export class GeneradorTexturaPBR implements IServicioTexturaPBR {
         ctxAltura.lineTo(this.anchoTextura, y);
         ctxAltura.stroke();
       }
-
-      const radioRombo = 120;
-      ctxColor.strokeStyle = col3;
-      ctxColor.lineWidth = 5;
-      ctxColor.beginPath();
-      ctxColor.moveTo(centroX, centroY - radioRombo);
-      ctxColor.lineTo(centroX + radioRombo, centroY);
-      ctxColor.lineTo(centroX, centroY + radioRombo);
-      ctxColor.lineTo(centroX - radioRombo, centroY);
-      ctxColor.closePath();
-      ctxColor.stroke();
-
-      ctxAltura.strokeStyle = '#F0F0F0';
-      ctxAltura.lineWidth = 5;
-      ctxAltura.beginPath();
-      ctxAltura.moveTo(centroX, centroY - radioRombo);
-      ctxAltura.lineTo(centroX + radioRombo, centroY);
-      ctxAltura.lineTo(centroX, centroY + radioRombo);
-      ctxAltura.lineTo(centroX - radioRombo, centroY);
-      ctxAltura.closePath();
-      ctxAltura.stroke();
-    } else if (idPatron === 'bandas-deportivas') {
-      const pasoFranja = 140;
-      const grosorLinea = 9;
-
-      for (let y = 60; y < this.altoTextura; y += pasoFranja) {
-        const colLinea = (y / pasoFranja) % 2 === 0 ? col2 : col3;
-
-        ctxColor.fillStyle = colLinea;
-        ctxColor.fillRect(0, y, this.anchoTextura, grosorLinea);
-
-        ctxAltura.fillStyle = '#D5D5D5';
-        ctxAltura.fillRect(0, y, this.anchoTextura, grosorLinea);
-
-        ctxColor.fillStyle = 'rgba(255,255,255,0.45)';
-        ctxColor.fillRect(0, y + grosorLinea + 4, this.anchoTextura, 2);
-
-        ctxAltura.fillStyle = '#B0B0B0';
-        ctxAltura.fillRect(0, y + grosorLinea + 4, this.anchoTextura, 2);
-      }
     }
 
     ctxColor.restore();
     ctxAltura.restore();
   }
 
-  private generarMapaNormalDesdeAlturas(
+  private async generarMapaNormalDesdeAlturasAsync(
+    ctxAltura: CanvasRenderingContext2D,
+    ancho: number,
+    alto: number,
+    esCancelado?: () => boolean
+  ): Promise<HTMLCanvasElement | null> {
+    const lienzoNormal = document.createElement('canvas');
+    lienzoNormal.width = ancho;
+    lienzoNormal.height = alto;
+    const ctxNormal = lienzoNormal.getContext('2d')!;
+
+    const datosImg = ctxAltura.getImageData(0, 0, ancho, alto);
+    const pixeles = datosImg.data;
+    const imgNormal = ctxNormal.createImageData(ancho, alto);
+    const pixelesNormal = imgNormal.data;
+
+    const factorFuerza = 3.2;
+    const pasoFilas = 48;
+
+    for (let y = 0; y < alto; y++) {
+      if (y > 0 && y % pasoFilas === 0) {
+        if (esCancelado?.()) return null;
+        await cederHilo();
+      }
+
+      const yArr = Math.max(0, y - 1);
+      const yAba = Math.min(alto - 1, y + 1);
+      const filaActual = y * ancho;
+      const filaArr = yArr * ancho;
+      const filaAba = yAba * ancho;
+
+      for (let x = 0; x < ancho; x++) {
+        const idx = (filaActual + x) * 4;
+
+        const xIzq = Math.max(0, x - 1);
+        const xDer = Math.min(ancho - 1, x + 1);
+
+        const hIzq = pixeles[(filaActual + xIzq) * 4] / 255.0;
+        const hDer = pixeles[(filaActual + xDer) * 4] / 255.0;
+        const hArr = pixeles[(filaArr + x) * 4] / 255.0;
+        const hAba = pixeles[(filaAba + x) * 4] / 255.0;
+
+        const dx = (hDer - hIzq) * factorFuerza;
+        const dy = (hAba - hArr) * factorFuerza;
+        const dz = 1.0;
+
+        const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        const nx = (dx / len) * 0.5 + 0.5;
+        const ny = (-dy / len) * 0.5 + 0.5;
+        const nz = (dz / len) * 0.5 + 0.5;
+
+        pixelesNormal[idx] = Math.floor(nx * 255);
+        pixelesNormal[idx + 1] = Math.floor(ny * 255);
+        pixelesNormal[idx + 2] = Math.floor(nz * 255);
+        pixelesNormal[idx + 3] = 255;
+      }
+    }
+
+    ctxNormal.putImageData(imgNormal, 0, 0);
+    return lienzoNormal;
+  }
+
+  private generarMapaNormalDesdeAlturasSync(
     ctxAltura: CanvasRenderingContext2D,
     ancho: number,
     alto: number
@@ -331,18 +545,22 @@ export class GeneradorTexturaPBR implements IServicioTexturaPBR {
     const factorFuerza = 3.2;
 
     for (let y = 0; y < alto; y++) {
+      const yArr = Math.max(0, y - 1);
+      const yAba = Math.min(alto - 1, y + 1);
+      const filaActual = y * ancho;
+      const filaArr = yArr * ancho;
+      const filaAba = yAba * ancho;
+
       for (let x = 0; x < ancho; x++) {
-        const idx = (y * ancho + x) * 4;
+        const idx = (filaActual + x) * 4;
 
         const xIzq = Math.max(0, x - 1);
         const xDer = Math.min(ancho - 1, x + 1);
-        const yArr = Math.max(0, y - 1);
-        const yAba = Math.min(alto - 1, y + 1);
 
-        const hIzq = pixeles[(y * ancho + xIzq) * 4] / 255.0;
-        const hDer = pixeles[(y * ancho + xDer) * 4] / 255.0;
-        const hArr = pixeles[(yArr * ancho + x) * 4] / 255.0;
-        const hAba = pixeles[(yAba * ancho + x) * 4] / 255.0;
+        const hIzq = pixeles[(filaActual + xIzq) * 4] / 255.0;
+        const hDer = pixeles[(filaActual + xDer) * 4] / 255.0;
+        const hArr = pixeles[(filaArr + x) * 4] / 255.0;
+        const hAba = pixeles[(filaAba + x) * 4] / 255.0;
 
         const dx = (hDer - hIzq) * factorFuerza;
         const dy = (hAba - hArr) * factorFuerza;

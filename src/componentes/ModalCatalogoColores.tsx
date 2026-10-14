@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { CATALOGO_COLORES, type DefinicionColor, type RanuraColor } from '../modelos/DefinicionColor';
 import { GeneradorGranulosProcedurales } from '../servicios/GeneradorGranulosProcedurales';
-import { Search, X, Check, Sparkles } from 'lucide-react';
+import { Search, X, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 
@@ -12,7 +12,7 @@ interface ModalCatalogoColoresProps {
   onCerrar: () => void;
 }
 
-const CATEGORIAS = ['Todos', 'Neutrales', 'Azules', 'Verdes', 'Tierra', 'Cálidos'] as const;
+const CATEGORIAS = ['All', 'Neutrals', 'Blues', 'Greens', 'Earth', 'Warm'] as const;
 
 // Singleton para generación y caché de prerenders de textura EPDM
 const generadorGranulos = new GeneradorGranulosProcedurales();
@@ -90,7 +90,7 @@ export const ModalCatalogoColores: React.FC<ModalCatalogoColoresProps> = ({
   onCerrar
 }) => {
   const [busqueda, setBusqueda] = useState('');
-  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>('Todos');
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>('All');
 
   const isOpen = indiceSeleccionando !== null;
 
@@ -118,7 +118,7 @@ export const ModalCatalogoColores: React.FC<ModalCatalogoColoresProps> = ({
         color.hex.toLowerCase().includes(busqueda.toLowerCase()) ||
         color.categoria.toLowerCase().includes(busqueda.toLowerCase());
       const coincideCategoria =
-        categoriaSeleccionada === 'Todos' || color.categoria === categoriaSeleccionada;
+        categoriaSeleccionada === 'All' || color.categoria === categoriaSeleccionada;
       return coincideBusqueda && coincideCategoria;
     });
   }, [busqueda, categoriaSeleccionada]);
@@ -134,46 +134,41 @@ export const ModalCatalogoColores: React.FC<ModalCatalogoColoresProps> = ({
       aria-labelledby="modal-catalogo-titulo"
     >
       <div
-        className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[85vh] max-h-[800px] min-h-[500px]"
+        className="relative w-full max-w-4xl bg-white rounded-3xl overflow-hidden flex flex-col h-[85vh] max-h-[780px] min-h-[500px]"
         onClick={e => e.stopPropagation()}
       >
         {/* Cabecera del Modal */}
-        <div className="flex items-center justify-between bg-zinc-50/80 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-[#006FEE] flex items-center justify-center text-white shadow-xs">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 id="modal-catalogo-titulo" className="text-base font-bold text-zinc-900 leading-tight">
-                Catálogo de Colores EPDM
-              </h2>
-              <p className="text-xs text-zinc-500">
-                Selecciona la textura y pigmento para la posición {indiceSeleccionando !== null ? indiceSeleccionando + 1 : ''}
-              </p>
-            </div>
+        <div className="flex items-center justify-between px-6 py-4 bg-white">
+          <div>
+            <h2 id="modal-catalogo-titulo" className="text-base font-bold text-zinc-900 leading-tight">
+              Color Catalog
+            </h2>
+            <p className="text-xs text-zinc-500 mt-0.5">
+              Select a color for your blend
+            </p>
           </div>
           <button
             type="button"
             onClick={onCerrar}
-            className="p-2 rounded-xl text-zinc-400 hover:text-zinc-700 hover:bg-zinc-200/60 transition-colors cursor-pointer"
-            aria-label="Cerrar modal"
+            className="p-2 rounded-xl text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
+            aria-label="Close catalog"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Filtros y Buscador */}
-        <div className="px-6 pt-4 pb-2 space-y-3 bg-white">
+        <div className="px-6 pb-3 space-y-3 bg-white">
           <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
             {/* Campo de Búsqueda */}
             <div className="relative flex-1">
               <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Buscar por color, código o tono..."
+                placeholder="Search by color or tone..."
                 value={busqueda}
                 onChange={e => setBusqueda(e.target.value)}
-                className="w-full pl-10 pr-8 py-2.5 text-xs bg-zinc-100/80 rounded-xl outline-none focus:bg-zinc-100 focus:ring-2 focus:ring-[#006FEE]/20 transition-all text-zinc-900 placeholder:text-zinc-400"
+                className="w-full pl-10 pr-8 py-2.5 text-xs bg-zinc-100 rounded-xl outline-none focus:bg-zinc-100 focus:ring-2 focus:ring-[#006FEE]/20 transition-all text-zinc-900 placeholder:text-zinc-400"
                 autoFocus
               />
               {busqueda && (
@@ -187,9 +182,9 @@ export const ModalCatalogoColores: React.FC<ModalCatalogoColoresProps> = ({
               )}
             </div>
 
-            {/* Selector de Categorías con animación */}
+            {/* Selector de Categorías */}
             <div className="overflow-x-auto no-scrollbar pb-0.5">
-              <div className="flex items-center gap-1 bg-zinc-100/80 p-1 rounded-2xl w-max">
+              <div className="flex items-center gap-1 bg-zinc-100 p-1 rounded-2xl w-max">
                 {CATEGORIAS.map(cat => {
                   const esActivo = categoriaSeleccionada === cat;
                   return (
@@ -197,12 +192,12 @@ export const ModalCatalogoColores: React.FC<ModalCatalogoColoresProps> = ({
                       key={cat}
                       type="button"
                       onClick={() => setCategoriaSeleccionada(cat)}
-                      className="relative px-3 py-1.5 text-xs font-semibold rounded-xl transition-colors whitespace-nowrap cursor-pointer"
+                      className="relative px-3.5 py-1.5 text-xs font-semibold rounded-xl transition-colors whitespace-nowrap cursor-pointer select-none"
                     >
                       {esActivo && (
                         <motion.div
                           layoutId="categoria-modal-activa"
-                          className="absolute inset-0 bg-[#006FEE] rounded-xl shadow-xs"
+                          className="absolute inset-0 bg-[#006FEE] rounded-xl"
                           transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                         />
                       )}
@@ -217,83 +212,68 @@ export const ModalCatalogoColores: React.FC<ModalCatalogoColoresProps> = ({
           </div>
         </div>
 
-        {/* Galería de Tarjetas con Prerender de Textura EPDM */}
-        <div className="p-6 overflow-y-auto flex-1">
+        {/* Galería de Tarjetas */}
+        <div className="p-6 overflow-y-auto flex-1 bg-white">
           {coloresFiltrados.length === 0 ? (
             <div className="py-16 text-center text-zinc-400 space-y-2">
-              <p className="text-sm font-medium">No se encontraron colores coincidentes con "{busqueda}"</p>
-              <p className="text-xs text-zinc-400">Intenta buscar por otro término o selecciona otra categoría.</p>
+              <p className="text-sm font-medium">No colors found matching "{busqueda}"</p>
+              <p className="text-xs text-zinc-400">Try searching for a different term or select another category.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
               {coloresFiltrados.map(color => {
                 const yaSeleccionado = idsSeleccionados.includes(color.id);
                 const prerenderUrl = obtenerPrerenderColor(color);
 
                 return (
-                  <div
+                  <button
                     key={color.id}
+                    type="button"
+                    disabled={yaSeleccionado}
                     onClick={() => {
                       if (!yaSeleccionado) onSeleccionarColor(color);
                     }}
-                    className={`group relative flex flex-col bg-zinc-100/70 hover:bg-zinc-100/90 rounded-2xl p-2.5 transition-all duration-200 text-left ${
-                      yaSeleccionado
+                    className={`group relative flex flex-col bg-zinc-100/70 hover:bg-zinc-100 p-2.5 rounded-2xl transition-all duration-200 text-left select-none ${yaSeleccionado
                         ? 'opacity-40 cursor-not-allowed'
-                        : 'cursor-pointer hover:shadow-md hover:-translate-y-0.5'
-                    }`}
+                        : 'cursor-pointer active:scale-[0.98]'
+                      }`}
                   >
-                    {/* Caja de Prerender de Textura EPDM */}
+                    {/* Caja de textura EPDM */}
                     <div className="relative aspect-[16/10] w-full rounded-xl overflow-hidden bg-zinc-200">
                       <img
                         src={prerenderUrl}
-                        alt={`Muestra de grano ${color.nombre}`}
+                        alt={`Granule sample ${color.nombre}`}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         loading="lazy"
                       />
 
-                      {/* Insignia de Categoría flotante */}
-                      <div className="absolute top-2 right-2">
-                        <span className="inline-flex items-center px-2 py-0.5 bg-black/40 backdrop-blur-md text-white text-[10px] font-medium rounded-full shadow-xs">
-                          {color.categoria}
-                        </span>
-                      </div>
-
-                      {/* Swatch de Tono Hex */}
-                      <div className="absolute top-2 left-2">
-                        <div className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2 py-0.5 rounded-full shadow-xs text-[10px] font-mono font-bold text-zinc-800">
-                          <span
-                            className="w-2.5 h-2.5 rounded-full ring-1 ring-black/10 shrink-0"
-                            style={{ backgroundColor: color.hex }}
-                          />
-                          <span>{color.hex}</span>
-                        </div>
-                      </div>
-
-                      {/* Indicador sobrepuesto al hacer hover o en uso */}
+                      {/* Indicador de color ya en uso en otra posición */}
                       {yaSeleccionado && (
-                        <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px] flex items-center justify-center">
-                          <span className="inline-flex items-center gap-1 bg-white text-zinc-800 text-xs font-bold px-3 py-1 rounded-full shadow-sm">
-                            <Check className="w-3.5 h-3.5 text-emerald-600" /> En uso
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center">
+                          <span className="inline-flex items-center gap-1.5 bg-white text-zinc-800 text-xs font-bold px-3 py-1.5 rounded-full">
+                            <Check className="w-3.5 h-3.5 text-emerald-600" /> In use
                           </span>
                         </div>
                       )}
                     </div>
 
-                    {/* Información del Color */}
-                    <div className="pt-2.5 pb-1 px-1 flex items-center justify-between gap-2">
-                      <div className="truncate">
+                    {/* Información del Color: muestra de tono, nombre y categoría */}
+                    <div className="pt-2.5 pb-0.5 px-1 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 truncate">
+                        <span
+                          className="w-3 h-3 rounded-full shrink-0 ring-1 ring-black/10"
+                          style={{ backgroundColor: color.hex }}
+                        />
                         <h3 className="text-xs font-bold text-zinc-900 truncate group-hover:text-[#006FEE] transition-colors">
                           {color.nombre}
                         </h3>
                       </div>
 
-                      {!yaSeleccionado && (
-                        <span className="shrink-0 text-xs font-bold text-[#006FEE] group-hover:translate-x-0.5 transition-transform">
-                          Elegir →
-                        </span>
-                      )}
+                      <span className="shrink-0 text-[10px] font-medium text-zinc-400">
+                        {color.categoria}
+                      </span>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -303,5 +283,3 @@ export const ModalCatalogoColores: React.FC<ModalCatalogoColoresProps> = ({
     </div>
   );
 };
-
-

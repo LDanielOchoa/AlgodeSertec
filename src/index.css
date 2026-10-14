@@ -8,6 +8,17 @@
   }
 }
 
+/* Anulación de sombras para diseño plano y limpio */
+.shadow-2xs,
+.shadow-xs,
+.shadow-sm,
+.shadow-md,
+.shadow-lg,
+.shadow-xl,
+.shadow-2xl {
+  box-shadow: none !important;
+}
+
 
 /* Deslizador de rango limpio sin sombras */
 input[type="range"] {

@@ -62,13 +62,13 @@ export function VisorEscena3D({ motor3D, estaMezclando = false, visible = true }
           />
 
           {/* Widget flotante de Zoom */}
-          <div className="absolute bottom-3.5 right-3.5 flex items-center gap-1 bg-white/95 backdrop-blur-md rounded-2xl p-1.5 shadow-sm z-10">
+          <div className="absolute bottom-3.5 right-3.5 flex items-center gap-1 bg-white/95 backdrop-blur-md rounded-2xl p-1.5 z-10">
             
             <button
               type="button"
               onClick={manejarZoomOut}
-              title="Alejar zoom"
-              aria-label="Alejar zoom"
+              title="Zoom Out"
+              aria-label="Zoom Out"
               className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-600 hover:text-[#006FEE] hover:bg-zinc-100 transition-colors cursor-pointer"
             >
               <ZoomOut className="w-3.5 h-3.5" />
@@ -90,7 +90,7 @@ export function VisorEscena3D({ motor3D, estaMezclando = false, visible = true }
                     onClick={() => seleccionarPresetZoom(preset)}
                     className={`min-w-8 h-7 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
                       esSeleccionado
-                        ? 'bg-[#006FEE] text-white shadow-xs'
+                        ? 'bg-[#006FEE] text-white'
                         : 'text-zinc-600 hover:text-zinc-900 hover:bg-white/60'
                     }`}
                   >
@@ -105,8 +105,8 @@ export function VisorEscena3D({ motor3D, estaMezclando = false, visible = true }
             <button
               type="button"
               onClick={manejarZoomIn}
-              title="Acercar zoom"
-              aria-label="Acercar zoom"
+              title="Zoom In"
+              aria-label="Zoom In"
               className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-600 hover:text-[#006FEE] hover:bg-zinc-100 transition-colors cursor-pointer"
             >
               <ZoomIn className="w-3.5 h-3.5" />
@@ -115,7 +115,7 @@ export function VisorEscena3D({ motor3D, estaMezclando = false, visible = true }
 
           {/* Pista de interacción */}
           <div className="absolute bottom-3.5 left-3.5 bg-zinc-900/70 backdrop-blur-xs text-white text-[10px] font-medium px-2.5 py-1 rounded-full pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
-            Scroll o botones para zoom
+            Scroll or buttons to zoom
           </div>
 
         </div>

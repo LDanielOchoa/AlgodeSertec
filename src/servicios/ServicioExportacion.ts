@@ -37,12 +37,12 @@ export class ServicioExportacion implements IServicioExportacion {
 
     ctx.fillStyle = '#18181B';
     ctx.font = '600 28px system-ui, -apple-system, sans-serif';
-    ctx.fillText('Ficha Técnica de Mezcla de Caucho EPDM', 56, 102);
+    ctx.fillText('EPDM Rubber Blend Spec Sheet', 56, 102);
 
     ctx.fillStyle = '#71717A';
     ctx.font = '400 14px system-ui, -apple-system, sans-serif';
-    const fecha = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
-    ctx.fillText(`Muestra Digital 3D  |  Generado: ${fecha}`, 56, 126);
+    const fecha = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    ctx.fillText(`3D Digital Sample  |  Generated: ${fecha}`, 56, 126);
 
     // 3. Renderizado de la muestra central
     const anchoMuestra = 680;
@@ -80,7 +80,7 @@ export class ServicioExportacion implements IServicioExportacion {
 
     ctx.fillStyle = '#006FEE';
     ctx.font = 'bold 12px system-ui, -apple-system, sans-serif';
-    ctx.fillText('COMPOSICIÓN DE LA MEZCLA', panelX, panelY);
+    ctx.fillText('BLEND COMPOSITION', panelX, panelY);
     panelY += 28;
 
     const ranurasActivas = ranuras.filter(r => r.color !== null && r.porcentaje > 0);
@@ -120,14 +120,14 @@ export class ServicioExportacion implements IServicioExportacion {
     panelY += 15;
     ctx.fillStyle = '#27272A';
     ctx.font = '600 13px system-ui, -apple-system, sans-serif';
-    ctx.fillText('ESPECIFICACIONES DEL SISTEMA', panelX, panelY);
+    ctx.fillText('SYSTEM SPECIFICATIONS', panelX, panelY);
     panelY += 24;
 
     const especificaciones = [
-      '• Granulometría: 1.0 - 3.5 mm (EPDM Virgen)',
-      '• Ligante: Resina de Poliuretano Alifática 100%',
-      '• Aplicación: Pavimentos continuos de seguridad',
-      '• Resistencia UV: Máxima estabilidad cromática'
+      '• Granule size: 1.0 - 3.5 mm (Virgin EPDM)',
+      '• Binder: 100% Aliphatic Polyurethane Resin',
+      '• Application: Seamless safety surfacing',
+      '• UV Resistance: Maximum color stability'
     ];
 
     ctx.fillStyle = '#71717A';
@@ -141,7 +141,7 @@ export class ServicioExportacion implements IServicioExportacion {
     ctx.fillStyle = '#A1A1AA';
     ctx.font = '400 12px system-ui, -apple-system, sans-serif';
     ctx.fillText(
-      'Nota: Esta muestra digital 3D es una representación visual fidedigna. La superficie in situ puede tener ligeras variaciones de tonalidad.',
+      'Note: This 3D digital sample is a realistic visual simulation. On-site surface color tones may vary slightly.',
       56,
       845
     );

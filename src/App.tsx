@@ -17,6 +17,7 @@ import { VisorEscena3D } from './componentes/VisorEscena3D';
 import { VisorVistaReal } from './componentes/VisorVistaReal';
 import { ModalCatalogoColores } from './componentes/ModalCatalogoColores';
 import { Box, Dices, Download, Image as ImageIcon, SlidersHorizontal } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 
 
@@ -42,15 +43,15 @@ export function App() {
 
   const [modalIndice, setModalIndice] = useState<number | null>(null);
 
-  // Actualizar textura en Three.js al cambiar ranuras
-  const actualizarEscena3D = useCallback(() => {
-    motor3D.actualizarTextura(ranuras);
+  // Actualizar textura en Three.js al cambiar ranuras sin bloquear el hilo principal
+  const actualizarEscena3D = useCallback(async () => {
+    await motor3D.actualizarTexturaAsync(ranuras);
   }, [motor3D, ranuras]);
 
   useEffect(() => {
     const temporizador = setTimeout(() => {
       actualizarEscena3D();
-    }, 60);
+    }, 100);
     return () => clearTimeout(temporizador);
   }, [actualizarEscena3D]);
 
@@ -78,7 +79,6 @@ export function App() {
     setRanuras(nuevasRanuras);
   };
 
-
   // Modificar porcentaje de una ranura
   const modificarPorcentaje = (indice: number, nuevoValor: number) => {
     setRanuras(prev => calculador.recalcular(prev, indice, nuevoValor));
@@ -97,12 +97,14 @@ export function App() {
     setModalIndice(null);
   };
 
-  // Re-mezclar gránulos con microanimación
-  const mezclarColores = () => {
+  // Re-mezclar gránulos con animación fluida sin bloquear el hilo del navegador
+  const mezclarColores = async () => {
     setEstaMezclando(true);
-    actualizarEscena3D();
     setVersionMezcla(v => v + 1);
-    setTimeout(() => setEstaMezclando(false), 250);
+    // Ceder el turno para que la animación del dado comience inmediatamente
+    await new Promise(resolver => setTimeout(resolver, 20));
+    await motor3D.actualizarTexturaAsync(ranuras);
+    setEstaMezclando(false);
   };
 
   // Guardar imagen 3D con ficha técnica
@@ -114,23 +116,23 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F5F7] text-zinc-900 font-sans selection:bg-[#006FEE]/15 selection:text-[#006FEE] flex items-center justify-center p-4 sm:p-6 lg:p-8">
-      {/* Espacio de trabajo centrado Studio Workspace */}
-      <main className="w-full max-w-7xl">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
+    <div className="min-h-screen bg-[#F4F5F7] text-zinc-900 font-sans selection:bg-[#006FEE]/15 selection:text-[#006FEE] flex items-center justify-center p-3 sm:p-4 lg:p-6">
+      {/* Contenedor unificado tipo Studio Workspace expandido verticalmente */}
+      <main className="w-full max-w-7xl bg-white rounded-3xl overflow-hidden flex flex-col lg:h-[88vh] lg:min-h-[760px] lg:max-h-[920px]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 items-stretch flex-1 min-h-0">
 
-          {/* Panel Izquierdo: Dock de Control (5 columnas) sin bordes */}
-          <aside className="lg:col-span-5 bg-white p-5 sm:p-6 rounded-3xl shadow-sm space-y-5 flex flex-col justify-between">
+          {/* Panel Izquierdo: Dock de Control (5 columnas) */}
+          <aside className="lg:col-span-5 p-5 sm:p-6 flex flex-col justify-between overflow-y-auto">
 
             <div className="space-y-5">
               <div className="flex items-center justify-between pb-1">
                 <div className="flex items-center gap-2 text-zinc-800 font-bold text-sm">
                   <SlidersHorizontal className="w-4 h-4 text-[#006FEE]" />
-                  <span>Panel de Mezcla</span>
+                  <span>Mix Studio</span>
                 </div>
 
                 <span className="text-xs font-semibold bg-blue-50 text-[#006FEE] px-2.5 py-1 rounded-full">
-                  {modoSeleccionado} {modoSeleccionado === 1 ? 'Color' : 'Colores'}
+                  {modoSeleccionado} {modoSeleccionado === 1 ? 'Color' : 'Colors'}
                 </span>
               </div>
 
@@ -144,10 +146,10 @@ export function App() {
               {/* 2. Lista de Colores de la Mezcla */}
               <div className="space-y-2.5">
                 <label className="block text-xs font-semibold text-zinc-600">
-                  Composición de Colores
+                  Color Composition
                 </label>
 
-                <div className="space-y-2.5 min-h-[350px] sm:min-h-[362px]">
+                <div className="space-y-2.5">
                   {ranuras.map((ranura, idx) => (
                     <FilaColorStudio
                       key={idx}
@@ -171,56 +173,65 @@ export function App() {
               <button
                 type="button"
                 onClick={mezclarColores}
-                className="flex-1 flex items-center justify-center gap-2 bg-zinc-900 hover:bg-black active:bg-zinc-800 text-white font-semibold text-xs sm:text-sm h-12 rounded-2xl transition-all cursor-pointer shadow-xs"
+                className="flex-1 flex items-center justify-center gap-2 bg-zinc-900 hover:bg-black active:bg-zinc-800 text-white font-semibold text-xs sm:text-sm h-12 rounded-2xl transition-all cursor-pointer"
               >
                 <Dices className={`w-4 h-4 text-[#006FEE] ${estaMezclando ? 'animate-spin' : ''}`} />
-                <span>Remezclar</span>
+                <span>Remix</span>
               </button>
             </div>
 
           </aside>
 
           {/* Panel Derecho: Escenario de visualización (7 columnas) */}
-          <section className="lg:col-span-7 flex flex-col h-full">
-            <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-sm relative group flex-1 flex flex-col gap-3 min-h-[460px] lg:min-h-0">
+          <section className="lg:col-span-7 p-4 sm:p-6 relative group flex flex-col gap-3 h-full min-h-[480px] lg:min-h-0">
 
-              {/* Selector de vista: Render 3D / Vista Real */}
-              <div className="flex items-center justify-between">
-                <div className="inline-flex items-center gap-0.5 bg-zinc-100 p-1 rounded-xl">
-                  {([
-                    { id: '3d', etiqueta: 'Render 3D', Icono: Box },
-                    { id: 'real', etiqueta: 'Vista Real', Icono: ImageIcon }
-                  ] as const).map(({ id, etiqueta, Icono }) => (
+            {/* Selector de vista: Render 3D / Vista Real centrado y sin bordes */}
+            <div className="flex items-center justify-center relative py-0.5">
+              <div className="inline-flex items-center p-1 bg-zinc-100 rounded-2xl relative">
+                {([
+                  { id: '3d', etiqueta: '3D Render', Icono: Box },
+                  { id: 'real', etiqueta: 'Real View', Icono: ImageIcon }
+                ] as const).map(({ id, etiqueta, Icono }) => {
+                  const esActivo = vistaActiva === id;
+                  return (
                     <button
                       key={id}
                       type="button"
                       onClick={() => setVistaActiva(id)}
-                      className={`flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                        vistaActiva === id
-                          ? 'bg-white text-[#006FEE] shadow-xs'
+                      className={`relative flex items-center gap-2 h-9 px-4 rounded-xl text-xs font-semibold transition-colors cursor-pointer z-10 ${
+                        esActivo
+                          ? 'text-[#006FEE]'
                           : 'text-zinc-600 hover:text-zinc-900'
                       }`}
                     >
-                      <Icono className="w-3.5 h-3.5" />
-                      {etiqueta}
+                      {esActivo && (
+                        <motion.div
+                          layoutId="tab-vista-activa"
+                          className="absolute inset-0 bg-white rounded-xl"
+                          transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                        />
+                      )}
+                      <Icono className="w-4 h-4 relative z-10" />
+                      <span className="relative z-10">{etiqueta}</span>
                     </button>
-                  ))}
-                </div>
-                <span className="hidden sm:block text-[11px] font-medium text-zinc-500">
-                  {vistaActiva === '3d' ? 'Muestra cenital de la mezcla' : 'Mezcla aplicada en un parque real'}
-                </span>
+                  );
+                })}
               </div>
 
-              {/* Viewport 3D Three.js (se mantiene montado para conservar el contexto WebGL) */}
-              <VisorEscena3D motor3D={motor3D} estaMezclando={estaMezclando} visible={vistaActiva === '3d'} />
-
-              {/* Vista real fotográfica */}
-              {vistaActiva === 'real' && (
-                <VisorVistaReal ranuras={ranuras} generadorPBR={generadorPBR} activo versionMezcla={versionMezcla} />
-              )}
+              {/* Subtítulo discreto a la derecha sin romper el centrado */}
+              <span className="absolute right-0 hidden xl:block text-[11px] font-medium text-zinc-400 pointer-events-none">
+                {vistaActiva === '3d' ? '3D top view' : 'Applied to playground'}
+              </span>
             </div>
-          </section>
 
+            {/* Viewport 3D Three.js (se mantiene montado para conservar el contexto WebGL) */}
+            <VisorEscena3D motor3D={motor3D} estaMezclando={estaMezclando} visible={vistaActiva === '3d'} />
+
+            {/* Vista real fotográfica */}
+            {vistaActiva === 'real' && (
+              <VisorVistaReal ranuras={ranuras} generadorPBR={generadorPBR} activo versionMezcla={versionMezcla} />
+            )}
+          </section>
         </div>
       </main>
 

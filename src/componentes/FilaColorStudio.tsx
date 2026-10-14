@@ -12,7 +12,8 @@ interface FilaColorStudioProps {
 }
 
 /**
- * Fila de control de color limpia y sin bordes.
+ * Fila de control de color limpia, compacta y sin bordes.
+ * Permite seleccionar el pigmento EPDM y ajustar su proporción con respuesta visual inmediata.
  */
 export const FilaColorStudio: React.FC<FilaColorStudioProps> = ({
   ranura,
@@ -23,53 +24,64 @@ export const FilaColorStudio: React.FC<FilaColorStudioProps> = ({
   deshabilitadoBloqueo
 }) => {
   const tooltipTexto = deshabilitadoBloqueo
-    ? 'Bloqueo no disponible en modo 1 color'
+    ? 'Lock not available in 1-color mode'
     : ranura.bloqueado
-    ? 'Desbloquear proporción'
-    : 'Bloquear proporción';
+    ? 'Unlock ratio'
+    : 'Lock ratio';
+
+  const colorHex = ranura.color ? ranura.color.hex : '#006FEE';
+  const nombreColor = ranura.color ? ranura.color.nombre.split(' - ')[0] : 'Select';
 
   return (
-    <div className="bg-zinc-100/70 hover:bg-zinc-100/90 p-3.5 sm:p-4 rounded-2xl transition-colors duration-200 space-y-3">
-      {/* Selector de color y candado */}
-      <div className="flex items-center gap-2">
+    <div className="bg-zinc-100/70 hover:bg-zinc-100/90 p-3 sm:p-3.5 rounded-2xl transition-all duration-200 space-y-2.5">
+      {/* Cabecera de la fila: Selector de color a la izquierda, candado y porcentaje a la derecha */}
+      <div className="flex items-center justify-between gap-2">
+        {/* Botón para cambiar color */}
         <button
           type="button"
           onClick={() => onAbrirModal(indice)}
-          className="flex-1 flex items-center justify-between bg-white hover:bg-white/90 rounded-xl px-3.5 h-11 transition-all cursor-pointer text-left shadow-xs"
+          className="flex items-center gap-2.5 px-2 py-1 -ml-1 rounded-xl hover:bg-white/80 active:scale-[0.98] transition-all cursor-pointer group text-left max-w-[65%]"
+          title="Change pigment color"
         >
-          <div className="flex items-center gap-3 truncate">
-            <span
-              className="w-4 h-4 rounded-full flex-shrink-0 ring-2 ring-black/5"
-              style={{ backgroundColor: ranura.color ? ranura.color.hex : '#006FEE' }}
-            />
-            <span className="text-xs font-semibold text-zinc-900 truncate">
-              {ranura.color ? ranura.color.nombre.split(' - ')[0] : 'Seleccionar'}
-            </span>
-          </div>
-          <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
+          <span
+            className="w-5 h-5 rounded-full flex-shrink-0 ring-2 ring-white"
+            style={{ backgroundColor: colorHex }}
+          />
+          <span className="text-xs font-bold text-zinc-900 group-hover:text-[#006FEE] transition-colors truncate">
+            {nombreColor}
+          </span>
+          <ChevronDown className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[#006FEE] transition-colors shrink-0" />
         </button>
 
-        {/* Botón de bloqueo */}
-        <button
-          type="button"
-          disabled={deshabilitadoBloqueo}
-          onClick={() => onAlternarBloqueo(indice)}
-          title={tooltipTexto}
-          className={`flex items-center justify-center rounded-xl h-11 w-11 transition-all ${
-            deshabilitadoBloqueo
-              ? 'opacity-40 bg-zinc-200/60 text-zinc-400 cursor-not-allowed'
-              : ranura.bloqueado
-              ? 'bg-[#006FEE] text-white shadow-xs cursor-pointer'
-              : 'bg-white hover:bg-white/90 text-zinc-600 shadow-xs cursor-pointer'
-          }`}
-          aria-label={tooltipTexto}
-        >
-          {ranura.bloqueado ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
-        </button>
+        {/* Acciones a la derecha: Candado y Porcentaje */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Botón de bloqueo */}
+          <button
+            type="button"
+            disabled={deshabilitadoBloqueo}
+            onClick={() => onAlternarBloqueo(indice)}
+            title={tooltipTexto}
+            className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all ${
+              deshabilitadoBloqueo
+                ? 'opacity-30 text-zinc-400 cursor-not-allowed'
+                : ranura.bloqueado
+                ? 'bg-[#006FEE] text-white cursor-pointer active:scale-95'
+                : 'text-zinc-400 hover:text-zinc-700 hover:bg-white/80 cursor-pointer active:scale-95'
+            }`}
+            aria-label={tooltipTexto}
+          >
+            {ranura.bloqueado ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+          </button>
+
+          {/* Badge de porcentaje */}
+          <span className="inline-flex items-center justify-center bg-white text-zinc-900 font-bold font-mono text-xs px-2.5 py-1 rounded-xl min-w-[50px]">
+            {ranura.porcentaje}%
+          </span>
+        </div>
       </div>
 
-      {/* Control deslizante Slider */}
-      <div className="flex items-center gap-3 pt-0.5">
+      {/* Control deslizante Slider con pista teñida con el color del pigmento */}
+      <div className="flex items-center px-1">
         <input
           type="range"
           min={0}
@@ -78,15 +90,14 @@ export const FilaColorStudio: React.FC<FilaColorStudioProps> = ({
           value={ranura.porcentaje}
           disabled={ranura.bloqueado || deshabilitadoBloqueo}
           onChange={e => onModificarPorcentaje(indice, Number(e.target.value))}
-          aria-label={`Porcentaje Color ${indice + 1}`}
-          className={`flex-1 ${
+          aria-label={`Color ${indice + 1} percentage`}
+          style={{
+            background: `linear-gradient(to right, ${colorHex} 0%, ${colorHex} ${ranura.porcentaje}%, #E4E4E7 ${ranura.porcentaje}%, #E4E4E7 100%)`
+          }}
+          className={`w-full ${
             ranura.bloqueado || deshabilitadoBloqueo ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
           }`}
         />
-
-        <span className="inline-flex items-center justify-center bg-white text-zinc-900 font-bold font-mono text-xs px-2.5 py-1 rounded-xl min-w-[52px] shadow-xs">
-          {ranura.porcentaje}%
-        </span>
       </div>
     </div>
   );

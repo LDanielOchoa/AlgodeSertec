@@ -26,6 +26,7 @@ export interface ConfiguracionEscenaReal {
 export interface ICompositorVistaReal {
   preparar(urlImagen: string): Promise<void>;
   componer(destino: HTMLCanvasElement, texturaDifusa: HTMLCanvasElement): void;
+  componerAsync(destino: HTMLCanvasElement, texturaDifusa: HTMLCanvasElement, esCancelado?: () => boolean): Promise<boolean>;
   estaListo(): boolean;
 }
 
@@ -417,11 +418,112 @@ export class CompositorVistaReal implements ICompositorVistaReal {
 
     ctx.putImageData(salida, 0, 0);
   }
+
+  /**
+   * Compone la fotografía de forma asíncrona no bloqueante, cediendo tiempo al hilo principal
+   * y soportando cancelación para mantener la interfaz a 60/120 FPS.
+   */
+  public async componerAsync(
+    destino: HTMLCanvasElement,
+    texturaDifusa: HTMLCanvasElement,
+    esCancelado?: () => boolean
+  ): Promise<boolean> {
+    if (!this.estaListo()) return false;
+    const w = this.ancho;
+    const h = this.alto;
+    const original = this.pixelesOriginales!;
+    const mascara = this.mascara!;
+    const factorLuz = this.factorLuz!;
+
+    if (destino.width !== w) destino.width = w;
+    if (destino.height !== h) destino.height = h;
+    const ctx = destino.getContext('2d')!;
+    const salida = ctx.createImageData(w, h);
+    const out = salida.data;
+    out.set(original);
+
+    const ctxTex = texturaDifusa.getContext('2d', { willReadFrequently: true })!;
+    const imgTex = ctxTex.getImageData(0, 0, texturaDifusa.width, texturaDifusa.height);
+    const datosTex = imgTex.data;
+    const tw = texturaDifusa.width;
+    const th = texturaDifusa.height;
+
+    const yh = h * this.config.horizonte;
+    const cx = w / 2;
+    const f = h * this.config.focal;
+    const A = this.config.texelesPorPixelInferior * (h - yh);
+    const yMin = Math.floor(h * this.config.limiteSuperiorSuelo);
+
+    const pasoFilas = 36;
+
+    for (let y = yMin; y < h; y++) {
+      if (y > yMin && (y - yMin) % pasoFilas === 0) {
+        if (esCancelado?.()) return false;
+        await cederHilo();
+      }
+
+      const d = y - yh;
+      if (d <= 1) continue;
+
+      const v = (A * f) / d;
+      const escalaU = A / d;
+
+      for (let x = 0; x < w; x++) {
+        const i = y * w + x;
+        const a = mascara[i];
+        if (a < 0.004) continue;
+
+        const u = (x - cx) * escalaU;
+
+        const uMod = ((u % tw) + tw) % tw;
+        const vMod = ((v % th) + th) % th;
+        const x0 = uMod | 0;
+        const y0 = vMod | 0;
+        const fx = uMod - x0;
+        const fy = vMod - y0;
+        const x1 = x0 + 1 >= tw ? 0 : x0 + 1;
+        const y1 = y0 + 1 >= th ? 0 : y0 + 1;
+
+        const i00 = (y0 * tw + x0) * 4;
+        const i10 = (y0 * tw + x1) * 4;
+        const i01 = (y1 * tw + x0) * 4;
+        const i11 = (y1 * tw + x1) * 4;
+
+        const w00 = (1 - fx) * (1 - fy);
+        const w10 = fx * (1 - fy);
+        const w01 = (1 - fx) * fy;
+        const w11 = fx * fy;
+
+        const colR = datosTex[i00] * w00 + datosTex[i10] * w10 + datosTex[i01] * w01 + datosTex[i11] * w11;
+        const colG = datosTex[i00 + 1] * w00 + datosTex[i10 + 1] * w10 + datosTex[i01 + 1] * w01 + datosTex[i11 + 1] * w11;
+        const colB = datosTex[i00 + 2] * w00 + datosTex[i10 + 2] * w10 + datosTex[i01 + 2] * w01 + datosTex[i11 + 2] * w11;
+
+        const luz = factorLuz[i];
+        const j = i * 4;
+        out[j] = original[j] * (1 - a) + colR * luz * a;
+        out[j + 1] = original[j + 1] * (1 - a) + colG * luz * a;
+        out[j + 2] = original[j + 2] * (1 - a) + colB * luz * a;
+      }
+    }
+
+    if (esCancelado?.()) return false;
+
+    ctx.putImageData(salida, 0, 0);
+    return true;
+  }
 }
 
 // ---------------------------------------------------------------------------
 // Utilidades
 // ---------------------------------------------------------------------------
+
+const cederHilo = () => new Promise<void>(resolver => {
+  if (typeof requestAnimationFrame !== 'undefined') {
+    requestAnimationFrame(() => setTimeout(resolver, 0));
+  } else {
+    setTimeout(resolver, 0);
+  }
+});
 
 function limitar(valor: number, min: number, max: number): number {
   return valor < min ? min : valor > max ? max : valor;

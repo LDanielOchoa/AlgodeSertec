@@ -15,7 +15,7 @@ export const BarraBalanceMezcla: React.FC<BarraBalanceMezclaProps> = ({ ranuras 
   return (
     <div className="space-y-3 p-4 rounded-2xl bg-zinc-100/70">
       <div className="flex items-center justify-between text-xs font-semibold text-zinc-700">
-        <span>Balance de Mezcla</span>
+        <span>Blend Balance</span>
         <span className="text-[11px] font-mono text-zinc-400">Total: 100%</span>
       </div>
 
@@ -39,7 +39,7 @@ export const BarraBalanceMezcla: React.FC<BarraBalanceMezclaProps> = ({ ranuras 
         {ranurasActivas.map((r, i) => (
           <div
             key={i}
-            className="inline-flex items-center gap-1.5 bg-white text-zinc-800 text-[11px] px-2.5 py-1 rounded-xl shadow-xs"
+            className="inline-flex items-center gap-1.5 bg-white text-zinc-800 text-[11px] px-2.5 py-1 rounded-xl"
           >
             <span
               className="w-2.5 h-2.5 rounded-full shrink-0 ring-1 ring-black/5"

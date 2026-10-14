@@ -116,9 +116,9 @@ export const PestanasModo: React.FC<PestanasModoProps> = ({
   return (
     <div className="space-y-2">
       <label className="block text-xs font-semibold text-zinc-600">
-        Modo de Mezcla
+        Blend Mode
       </label>
-      <div className="grid grid-cols-3 gap-2 bg-zinc-100/80 p-1.5 rounded-2xl relative">
+      <div className="grid grid-cols-3 gap-1.5 bg-zinc-100/80 p-1.5 rounded-2xl relative">
         {modos.map(m => {
           const esActivo = modoSeleccionado === m.id;
           const prerenderUrl = obtenerPrerenderModo(m.id);
@@ -128,67 +128,53 @@ export const PestanasModo: React.FC<PestanasModoProps> = ({
               key={m.id}
               type="button"
               onClick={() => onSeleccionarModo(m.id)}
-              className="relative flex flex-col items-center p-2 rounded-xl cursor-pointer select-none transition-all group"
+              className={`relative flex flex-col items-center p-2 rounded-xl cursor-pointer select-none transition-all duration-200 active:scale-[0.97] group ${
+                !esActivo ? 'hover:bg-white/50' : ''
+              }`}
             >
               {esActivo && (
                 <motion.div
                   layoutId="indicador-modo-activo"
-                  className="absolute inset-0 bg-white rounded-xl shadow-xs ring-2 ring-[#006FEE]"
+                  className="absolute inset-0 bg-white rounded-xl"
                   transition={{
                     type: 'spring',
                     stiffness: 450,
-                    damping: 35
+                    damping: 32
                   }}
                 />
               )}
 
-              {/* Muestra visual de textura de caucho EPDM */}
-              <div className="relative aspect-[16/9] w-full rounded-lg overflow-hidden bg-zinc-200 mb-1.5 ring-1 ring-black/10 z-10">
+              {/* Muestra visual de textura de caucho EPDM simplificada */}
+              <div className="relative aspect-[16/9] w-full rounded-lg overflow-hidden bg-zinc-200 mb-1.5 ring-1 ring-black/5 z-10">
                 <img
                   src={prerenderUrl}
-                  alt={`Muestra ${m.subtitulo}`}
-                  className={`w-full h-full object-cover transition-transform duration-300 ${
-                    esActivo ? 'scale-105' : 'group-hover:scale-105 opacity-90'
+                  alt={`Sample ${m.subtitulo}`}
+                  className={`w-full h-full object-cover transition-all duration-300 ${
+                    esActivo
+                      ? 'scale-100 opacity-100'
+                      : 'opacity-75 group-hover:opacity-100 group-hover:scale-105'
                   }`}
                   loading="lazy"
                 />
-
-                {/* Swatches circulares pequeños para indicar la cantidad de pigmentos */}
-                <div className="absolute bottom-1 right-1 flex items-center -space-x-1 bg-black/45 backdrop-blur-xs px-1 py-0.5 rounded-full shadow-xs">
-                  {m.id === 1 && (
-                    <span className="w-2 h-2 rounded-full bg-[#2962B8] ring-1 ring-white/80" />
-                  )}
-                  {m.id === 2 && (
-                    <>
-                      <span className="w-2 h-2 rounded-full bg-[#2962B8] ring-1 ring-white/80" />
-                      <span className="w-2 h-2 rounded-full bg-[#B8BEBA] ring-1 ring-white/80" />
-                    </>
-                  )}
-                  {m.id === 3 && (
-                    <>
-                      <span className="w-2 h-2 rounded-full bg-[#2962B8] ring-1 ring-white/80" />
-                      <span className="w-2 h-2 rounded-full bg-[#B8BEBA] ring-1 ring-white/80" />
-                      <span className="w-2 h-2 rounded-full bg-[#56555A] ring-1 ring-white/80" />
-                    </>
-                  )}
-                </div>
               </div>
 
               {/* Etiqueta del modo */}
-              <span
-                className={`relative z-10 text-xs font-bold leading-tight transition-colors duration-150 ${
-                  esActivo ? 'text-[#006FEE]' : 'text-zinc-700 group-hover:text-zinc-900'
-                }`}
-              >
-                {m.id === 1 ? '1 Color' : `${m.id} Colores`}
-              </span>
-              <span
-                className={`relative z-10 text-[10px] leading-tight transition-colors duration-150 ${
-                  esActivo ? 'text-[#006FEE]/75 font-medium' : 'text-zinc-400'
-                }`}
-              >
-                {m.id === 1 ? 'Sólido' : 'Mezcla'}
-              </span>
+              <div className="relative z-10 text-center flex flex-col items-center">
+                <span
+                  className={`text-xs font-bold leading-tight transition-colors duration-150 ${
+                    esActivo ? 'text-[#006FEE]' : 'text-zinc-700 group-hover:text-zinc-900'
+                  }`}
+                >
+                  {m.id === 1 ? '1 Color' : `${m.id} Colors`}
+                </span>
+                <span
+                  className={`text-[10px] leading-tight transition-colors duration-150 ${
+                    esActivo ? 'text-[#006FEE]/75 font-semibold' : 'text-zinc-400 group-hover:text-zinc-500'
+                  }`}
+                >
+                  {m.id === 1 ? 'Solid' : 'Blend'}
+                </span>
+              </div>
             </button>
           );
         })}
